@@ -1,0 +1,41 @@
+name: Process Data and Commit Changes
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+jobs:
+  process_and_commit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: true  # Ensure Git operations are authenticated.
+          ref: ${{ github.head_ref }}  # Checkout the commit that triggered the workflow.
+
+      - name: Set up Python environment
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.8' # Use your desired version of Python.
+
+      - name: Install Python dependencies
+        run: |
+          pip install requests pandas
+
+      - name: Execute the script
+        run: python IE-app/scripts/fetch_data.py
+      
+      - name: Configure git
+        run: |
+          git config user.name 'github-actions'
+          git config user.email 'github-actions@github.com'
+          
+      - name: Commit and push changes if there are any
+        run: |
+          git add -A
+          git commit -m "Automatically update data" || echo "No changes to commit"
+          git push
