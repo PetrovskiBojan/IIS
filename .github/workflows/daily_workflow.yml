@@ -15,11 +15,13 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}  # Use GITHUB_TOKEN for checkout
 
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.12'  # Adjust this to the Python version you use
+          python-version: '3.12'
 
       - name: Install Poetry
         run: |
@@ -35,19 +37,21 @@ jobs:
         run: |
           pip install 'dvc[s3]'
 
-      - name: Configure DVC remote
-        run: |
-          dvc remote modify origin endpointurl https://dagshub.com/PetrovskiBojan/IIS.s3
-          dvc remote modify origin access_key_id ${{ secrets.DVC_ACCESS_KEY_ID }}
-          dvc remote modify origin secret_access_key ${{ secrets.DVC_SECRET_ACCESS_KEY }}
-
       - name: DVC Pull
         run: |
           dvc pull -r origin
 
-      - name: Run preprocess_data script
+      - name: Fetch Data
+        run: |
+          poetry run python scripts/fetch_data.py
+
+      - name: Preprocess Data
         run: |
           poetry run python scripts/preprocess_data.py
+
+      - name: Train Model
+        run: |
+          poetry run python scripts/train_model.py
 
       - name: DVC Add data and models
         run: |
@@ -65,3 +69,5 @@ jobs:
           git add .
           git commit -m "My daily workflow pipeline" || echo "No changes to commit"
           git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
