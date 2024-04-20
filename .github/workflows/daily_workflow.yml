@@ -11,8 +11,6 @@ jobs:
     defaults:
       run:
         working-directory: backend/IE-app
-    outputs:
-      poetry-path: ${{ steps.poetry-path.outputs.poetry-path }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -20,16 +18,27 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.12'  # Ensure this is the version you need
+          python-version: '3.12'  # Adjust this to the Python version you need
 
       - name: Install Poetry
         run: |
           curl -sSL https://install.python-poetry.org | python -
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      - name: Find Poetry path
-        id: poetry-path
-        run: echo "poetry-path=$(which poetry)" >> $GITHUB_ENV
+      - name: Install dependencies
+        run: |
+          poetry config virtualenvs.create false
+          poetry install
+
+      - name: Install DVC with S3 support
+        run: |
+          pip install 'dvc[s3]'
+
+      - name: Configure DVC remote
+        run: |
+          dvc remote modify origin endpointurl https://dagshub.com/PetrovskiBojan/IIS.s3
+          dvc remote modify origin access_key_id ${{ secrets.DVC_ACCESS_KEY_ID }}
+          dvc remote modify origin secret_access_key ${{ secrets.DVC_SECRET_ACCESS_KEY }}
 
   fetch_data:
     needs: setup
@@ -43,7 +52,7 @@ jobs:
 
       - name: Fetch Data
         run: |
-          ${{ needs.setup.outputs.poetry-path }} run python scripts/fetch_data.py
+          poetry run python scripts/fetch_data.py
 
   preprocess_data:
     needs: fetch_data
@@ -57,21 +66,21 @@ jobs:
 
       - name: Preprocess Data
         run: |
-          ${{ needs.setup.outputs.poetry-path }} run python scripts/preprocess_data.py
+          poetry run python scripts/preprocess_data.py
 
   train_model:
     needs: preprocess_data
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: backend/IE-app
+        working-working-directory: backend/IE-app
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
 
       - name: Train Model
         run: |
-          ${{ needs.setup.outputs.poetry-path }} run python scripts/train_model.py
+          poetry run python scripts/train_model.py
 
   push_changes:
     needs: train_model
@@ -83,11 +92,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: DVC and Git operations
+      - name: DVC Add and Push
         run: |
-          ${{ needs.setup.outputs.poetry-path }} run dvc add data
-          ${{ needs.setup.outputs.poetry-path }} run dvc add models
-          ${{ needs.setup.outputs.poetry-path }} run dvc push -r origin
+          poetry run dvc add data
+          poetry run dvc add models
+          poetry run dvc push -r origin
+
+      - name: Git Operations
+        run: |
           git config --global user.email "github-actions-bot@example.com"
           git config --global user.name "GitHub Actions"
           git add .
