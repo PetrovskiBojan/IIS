@@ -18,27 +18,24 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.12'  # Ensure this matches the Python version used in your project
+          python-version: '3.12'
 
       - name: Install Poetry
         run: |
           curl -sSL https://install.python-poetry.org | python3 -
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      - name: Install dependencies
+      - name: Install dependencies and DVC
         run: |
           poetry config virtualenvs.create false
           poetry install
-
-      - name: Install DVC with S3 support
-        run: |
-          pip install 'dvc[s3]'
+          poetry add dvc[s3]
 
       - name: Configure DVC remote
         run: |
-          dvc remote modify origin endpointurl https://dagshub.com/PetrovskiBojan/IIS.s3
-          dvc remote modify origin access_key_id ${{ secrets.DVC_ACCESS_KEY_ID }}
-          dvc remote modify origin secret_access_key ${{ secrets.DVC_SECRET_ACCESS_KEY }}
+          poetry run dvc remote modify origin endpointurl https://dagshub.com/PetrovskiBojan/IIS.s3
+          poetry run dvc remote modify origin access_key_id ${{ secrets.DVC_ACCESS_KEY_ID }}
+          poetry run dvc remote modify origin secret_access_key ${{ secrets.DVC_SECRET_ACCESS_KEY }}
 
   fetch_data:
     needs: setup
@@ -52,7 +49,7 @@ jobs:
 
       - name: DVC Pull and Fetch Data
         run: |
-          dvc pull -r origin
+          poetry run dvc pull -r origin
           poetry run python scripts/fetch_data.py
 
   preprocess_data:
