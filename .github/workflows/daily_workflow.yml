@@ -9,7 +9,7 @@ jobs:
   setup:
     runs-on: ubuntu-latest
     outputs:
-      poetry-path: ${{ steps.install-poetry.outputs.poetry-path }}
+      poetry-path: /home/runner/.local/bin/poetry
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -20,17 +20,14 @@ jobs:
           python-version: '3.12'
 
       - name: Install Poetry
-        id: install-poetry
         run: |
           curl -sSL https://install.python-poetry.org | python3 -
-          echo "poetry-path=${HOME}/.local/bin" >> $GITHUB_ENV
-          echo "${HOME}/.local/bin" >> $GITHUB_PATH
-          echo "::set-output name=poetry-path::${HOME}/.local/bin"
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      - name: Install dependencies and configure Poetry
+      - name: Install dependencies
         run: |
-          poetry config virtualenvs.create false
-          poetry install
+          ${{ outputs.poetry-path }} config virtualenvs.create false
+          ${{ outputs.poetry-path }} install
 
   fetch_data:
     needs: setup
@@ -42,13 +39,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Pull data using DVC
+      - name: DVC Pull and Fetch Data
         run: |
-          poetry run dvc pull -r origin
-
-      - name: Fetch data script
-        run: |
-          poetry run python scripts/fetch_data.py
+          ${{ needs.setup.outputs.poetry-path }} run dvc pull -r origin
+          ${{ needs.setup.outputs.poetry-path }} run python scripts/fetch_data.py
 
   preprocess_data:
     needs: fetch_data
@@ -59,7 +53,7 @@ jobs:
     steps:
       - name: Preprocess Data
         run: |
-          poetry run python scripts/preprocess_data.py
+          ${{ needs.setup.outputs.poetry-path }} run python scripts/preprocess_data.py
 
   train_model:
     needs: preprocess_data
@@ -70,7 +64,7 @@ jobs:
     steps:
       - name: Train Model
         run: |
-          poetry run python scripts/train_model.py
+          ${{ needs.setup.outputs.poetry-path }} run python scripts/train_model.py
 
   push_changes:
     needs: train_model
@@ -79,11 +73,11 @@ jobs:
       run:
         working-directory: backend/IE-app
     steps:
-      - name: DVC add and push
+      - name: DVC Add and Push Changes
         run: |
-          poetry run dvc add data
-          poetry run dvc add models
-          poetry run dvc push -r origin
+          ${{ needs.setup.outputs.poetry-path }} run dvc add data
+          ${{ needs.setup.outputs.poetry-path }} run dvc add models
+          ${{ needs.setup.outputs.poetry-path }} run dvc push -r origin
 
       - name: Git operations
         run: |
