@@ -1,51 +1,57 @@
-name: Daily Workflow
+name: Daily Model Training
 
 on:
   schedule:
-    - cron:  '30 16 * * *'
+    - cron: '30 16 * * *'  # Runs at 16:30 UTC every day
+  workflow_dispatch:
 
 jobs:
-  build:
+  train-and-push:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend/IE-app  # Adjust this if your Python project is located elsewhere
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: 3.8
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'  # Adjust as necessary
 
-    - name: Install Poetry
-      run: |
-        curl -sSL https://install.python-poetry.org | python3
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-    - name: Install dependencies
-      run: poetry install
+      - name: Install dependencies
+        run: |
+          poetry config virtualenvs.create false
+          poetry install
 
-    - name: Run scripts
-      run: |
-        python3 IE-app/scripts/fetch_data.py
-        python3 IE-app/scripts/preprocess_data.py
-        python3 IE-app/scripts/train_model.py
+      - name: Fetch data
+        run: poetry run python scripts/fetch_data.py
 
-    - name: Set up DVC
-      run: |
-        wget https://dvc.org/deb/dvc.list -O /etc/apt/sources.list.d/dvc.list
-        sudo apt-get update
-        sudo apt-get install dvc
+      - name: Preprocess data
+        run: poetry run python scripts/preprocess_data.py
 
-    - name: Add data and models to DVC
-      run: |
-        dvc add IE-app/data
-        dvc add IE-app/models
-        dvc push
+      - name: Train model
+        run: poetry run python scripts/train_model.py
 
-    - name: Commit and push changes
-      run: |
-        git config --global user.email "you@example.com"
-        git config --global user.name "Your Name"
-        git add .
-        git commit -m "Automated commit"
-        git push origin master
+      - name: DVC Add data and models
+        run: |
+          poetry run dvc add data
+          poetry run dvc add models
+
+      - name: DVC Push
+        run: poetry run dvc push -r origin
+
+      - name: Git operations
+        run: |
+          git config --global user.email "github-actions-bot@example.com"
+          git config --global user.name "GitHub Actions"
+          git add .
+          git commit -m "My daily workflow pipeline" || echo "No changes to commit"
+          git push
