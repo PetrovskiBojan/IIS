@@ -14,15 +14,20 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
-      - name: Set up Python and install dependencies
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.12'
+      - name: Install Poetry and dependencies
         run: |
-          actions/setup-python@v2 with:
-            python-version: '3.12'
           curl -sSL https://install.python-poetry.org | python3 -
           echo "$HOME/.local/bin" >> $GITHUB_PATH
           poetry config virtualenvs.create false
           poetry install
-          pip install 'dvc[s3]'
+      - name: Install DVC with S3 support
+        run: pip install 'dvc[s3]'
+      - name: Configure DVC remote and pull data
+        run: |
           dvc remote modify origin endpointurl https://dagshub.com/PetrovskiBojan/IIS.s3
           dvc remote modify origin access_key_id ${{ secrets.DVC_ACCESS_KEY_ID }}
           dvc remote modify origin secret_access_key ${{ secrets.DVC_SECRET_ACCESS_KEY }}
@@ -37,12 +42,14 @@ jobs:
       run:
         working-directory: backend/IE-app
     steps:
-      - name: Checkout repository and preprocess data
-        run: |
-          actions/checkout@v2
-          actions/setup-python@v2 with:
-            python-version: '3.12'
-          poetry run python scripts/preprocess_data.py
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.12'
+      - name: Preprocess Data
+        run: poetry run python scripts/preprocess_data.py
 
   train_model:
     needs: preprocess_data
@@ -51,12 +58,14 @@ jobs:
       run:
         working-directory: backend/IE-app
     steps:
-      - name: Checkout repository and train model
-        run: |
-          actions/checkout@v2
-          actions/setup-python@v2 with:
-            python-version: '3.12'
-          poetry run python scripts/train_model.py
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.12'
+      - name: Train Model
+        run: poetry run python scripts/train_model.py
 
   push_changes:
     needs: train_model
@@ -65,9 +74,10 @@ jobs:
       run:
         working-directory: backend/IE-app
     steps:
-      - name: Checkout, add, push changes, and commit
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Push changes using DVC and Git
         run: |
-          actions/checkout@v2
           poetry run dvc add data
           poetry run dvc add models
           poetry run dvc push -r origin
