@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: backend/IE-app  # Adjust this if your Python project is located elsewhere
+        working-directory: backend/IE-app
 
     steps:
       - name: Checkout repository
@@ -19,7 +19,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.8'  # Adjust as necessary
+          python-version: '3.10'  # Match the version specified in your pyproject.toml
 
       - name: Install Poetry
         run: |
