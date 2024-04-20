@@ -8,8 +8,9 @@ on:
 jobs:
   setup:
     runs-on: ubuntu-latest
-    outputs:
-      poetry-path: ${{ steps.setup-env.outputs.poetry-path }}
+    defaults:
+      run:
+        working-directory: backend/IE-app  # Make sure this path is relative to the root of the repo
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -19,15 +20,25 @@ jobs:
         with:
           python-version: '3.12'
 
-      - id: setup-env
-        name: Install and configure Poetry
+      - name: Install Poetry
         run: |
           curl -sSL https://install.python-poetry.org | python3 -
-          echo "poetry-path=${HOME}/.local/bin/poetry" >> $GITHUB_ENV
           echo "${HOME}/.local/bin" >> $GITHUB_PATH
-          echo "::set-output name=poetry-path::${HOME}/.local/bin/poetry"
-          ${HOME}/.local/bin/poetry config virtualenvs.create false
-          ${HOME}/.local/bin/poetry install
+
+      - name: Install dependencies
+        run: |
+          poetry install
+          poetry config virtualenvs.create false
+
+      - name: Install DVC with S3 support
+        run: |
+          poetry add dvc[s3]
+
+      - name: Configure DVC remote
+        run: |
+          poetry run dvc remote modify origin endpointurl https://dagshub.com/PetrovskiBojan/IIS.s3
+          poetry run dvc remote modify origin access_key_id ${{ secrets.DVC_ACCESS_KEY_ID }}
+          poetry run dvc remote modify origin secret_access_key ${{ secrets.DVC_SECRET_ACCESS_KEY }}
 
   fetch_data:
     needs: setup
@@ -41,8 +52,8 @@ jobs:
 
       - name: Pull data and fetch
         run: |
-          ${{ needs.setup.outputs.poetry-path }} run dvc pull -r origin
-          ${{ needs.setup.outputs.poetry-path }} run python scripts/fetch_data.py
+          poetry run dvc pull -r origin
+          poetry run python scripts/fetch_data.py
 
   preprocess_data:
     needs: fetch_data
@@ -56,7 +67,7 @@ jobs:
 
       - name: Preprocess Data
         run: |
-          ${{ needs.setup.outputs.poetry-path }} run python scripts/preprocess_data.py
+          poetry run python scripts/preprocess_data.py
 
   train_model:
     needs: preprocess_data
@@ -70,7 +81,7 @@ jobs:
 
       - name: Train Model
         run: |
-          ${{ needs.setup.outputs.poetry-path }} run python scripts/train_model.py
+          poetry run python scripts/train_model.py
 
   push_changes:
     needs: train_model
@@ -84,9 +95,9 @@ jobs:
 
       - name: Add and push changes
         run: |
-          ${{ needs.setup.outputs.poetry-path }} run dvc add data
-          ${{ needs.setup.outputs.poetry-path }} run dvc add models
-          ${{ needs.setup.outputs.poetry-path }} run dvc push -r origin
+          poetry run dvc add data
+          poetry run dvc add models
+          poetry run dvc push -r origin
           git config --global user.email "github-actions-bot@example.com"
           git config --global user.name "GitHub Actions"
           git add .
