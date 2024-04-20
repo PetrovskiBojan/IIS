@@ -1,57 +1,51 @@
-name: Daily Model Training
+name: Daily Workflow
 
 on:
   schedule:
-    - cron: '30 16 * * *'  # Runs at 16:30 UTC every day
-  workflow_dispatch:
+    - cron:  '30 16 * * *'
 
 jobs:
-  train-and-push:
+  build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
+    - name: Checkout code
+      uses: actions/checkout@v2
 
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.8'  # Adjust this as necessary
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
 
-      - name: Install Poetry
-        run: |
-          curl -sSL https://install.python-poetry.org | python3 -
+    - name: Install Poetry
+      run: |
+        curl -sSL https://install.python-poetry.org | python3
 
-      - name: Configure Poetry
-        run: |
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+    - name: Install dependencies
+      run: poetry install
 
-      - name: Change to Project Directory
-        run: cd backend/IE-app  # Adjust this path to where your pyproject.toml is located
+    - name: Run scripts
+      run: |
+        python3 IE-app/scripts/fetch_data.py
+        python3 IE-app/scripts/preprocess_data.py
+        python3 IE-app/scripts/train_model.py
 
-      - name: Install dependencies
-        run: |
-          poetry config virtualenvs.create false
-          poetry install
+    - name: Set up DVC
+      run: |
+        wget https://dvc.org/deb/dvc.list -O /etc/apt/sources.list.d/dvc.list
+        sudo apt-get update
+        sudo apt-get install dvc
 
-      - name: Fetch data
-        run: poetry run python scripts/fetch_data.py
+    - name: Add data and models to DVC
+      run: |
+        dvc add IE-app/data
+        dvc add IE-app/models
+        dvc push
 
-      - name: Preprocess data
-        run: poetry run python scripts/preprocess_data.py
-
-      - name: Train model
-        run: poetry run python scripts/train_model.py
-
-      - name: DVC Add data and models
-        run: |
-          poetry run dvc add data
-          poetry run dvc add models
-
-      - name: DVC Push
-        run: poetry run dvc push -r origin
-
-      - name: Git operations
-        run: |
-          git add .
-          git commit -m "My daily workflow pipeline"
-          git push
+    - name: Commit and push changes
+      run: |
+        git config --global user.email "you@example.com"
+        git config --global user.name "Your Name"
+        git add .
+        git commit -m "Automated commit"
+        git push origin master
