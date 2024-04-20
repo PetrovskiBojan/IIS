@@ -14,19 +14,22 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
+
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
           python-version: '3.12'
+
       - name: Install Poetry and dependencies
         run: |
           curl -sSL https://install.python-poetry.org | python3 -
           echo "$HOME/.local/bin" >> $GITHUB_PATH
           poetry config virtualenvs.create false
           poetry install
+
       - name: Install DVC with S3 support
-        run: |
-          pip install 'dvc[s3]'
+        run: pip install 'dvc[s3]'
+
       - name: Configure DVC remote
         run: |
           dvc remote modify origin endpointurl https://dagshub.com/PetrovskiBojan/IIS.s3
@@ -40,6 +43,9 @@ jobs:
       run:
         working-directory: backend/IE-app
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
       - name: DVC Pull and Fetch Data
         run: |
           dvc pull -r origin
@@ -52,6 +58,9 @@ jobs:
       run:
         working-directory: backend/IE-app
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
       - name: Preprocess Data
         run: |
           poetry run python scripts/preprocess_data.py
@@ -63,6 +72,9 @@ jobs:
       run:
         working-directory: backend/IE-app
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
       - name: Train Model
         run: |
           poetry run python scripts/train_model.py
@@ -74,12 +86,16 @@ jobs:
       run:
         working-directory: backend/IE-app
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
       - name: DVC Add and Push Changes
         run: |
           poetry run dvc add data
           poetry run dvc add models
           poetry run dvc push -r origin
-      - name: Git operations
+
+      - name: Git Operations
         run: |
           git config --global user.email "github-actions-bot@example.com"
           git config --global user.name "GitHub Actions"
