@@ -31,19 +31,24 @@ jobs:
           poetry config virtualenvs.create false
           poetry install
 
+      - name: Install DVC
+        run: |
+          pip install dvc
+
+      - name: Configure DVC remote
+        run: |
+          dvc remote add origin s3://dvc
+          dvc remote modify origin endpointurl https://dagshub.com/PetrovskiBojan/IIS.s3
+          dvc remote modify origin access_key_id ${{ secrets.DVC_ACCESS_KEY_ID }}
+          dvc remote modify origin secret_access_key ${{ secrets.DVC_SECRET_ACCESS_KEY }}
+
       - name: DVC Pull
         run: |
-          poetry run dvc pull
-        env:
-          DVC_REMOTE: origin
-          AWS_ACCESS_KEY_ID: ${{ secrets.DVC_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.DVC_SECRET_ACCESS_KEY }}
-
-      - name: List directory contents (optional debug step)
-        run: ls -la
+          dvc pull -r origin
 
       - name: Run preprocess_data script
-        run: poetry run python scripts/preprocess_data.py
+        run: |
+          poetry run python scripts/preprocess_data.py
 
       - name: DVC Add data and models
         run: |
@@ -53,9 +58,6 @@ jobs:
       - name: DVC Push
         run: |
           poetry run dvc push -r origin
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.DVC_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.DVC_SECRET_ACCESS_KEY }}
 
       - name: Git operations
         run: |
