@@ -31,14 +31,19 @@ jobs:
           poetry config virtualenvs.create false
           poetry install
 
-      - name: Fetch data
-        run: poetry run python scripts/fetch_data.py
+      - name: DVC Pull
+        run: |
+          poetry run dvc pull
+        env:
+          DVC_REMOTE: origin
+          AWS_ACCESS_KEY_ID: ${{ secrets.DVC_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.DVC_SECRET_ACCESS_KEY }}
 
-      - name: Preprocess data
+      - name: List directory contents (optional debug step)
+        run: ls -la
+
+      - name: Run preprocess_data script
         run: poetry run python scripts/preprocess_data.py
-
-      - name: Train model
-        run: poetry run python scripts/train_model.py
 
       - name: DVC Add data and models
         run: |
@@ -46,7 +51,11 @@ jobs:
           poetry run dvc add models
 
       - name: DVC Push
-        run: poetry run dvc push -r origin
+        run: |
+          poetry run dvc push -r origin
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.DVC_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.DVC_SECRET_ACCESS_KEY }}
 
       - name: Git operations
         run: |
