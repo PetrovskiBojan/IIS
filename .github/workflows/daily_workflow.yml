@@ -18,7 +18,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.12'  # Adjust this to the Python version you need
+          python-version: '3.12'  # Ensure this is the Python version you need
 
       - name: Install Poetry
         run: |
@@ -73,7 +73,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-working-directory: backend/IE-app
+        working-directory: backend/IE-app
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
