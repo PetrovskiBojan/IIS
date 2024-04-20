@@ -6,11 +6,12 @@ on:
   workflow_dispatch:
 
 jobs:
-  setup:
+  train-and-push:
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: backend/IE-app
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -18,17 +19,20 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.12'
+          python-version: '3.12'  # Ensure this matches the Python version used in your project
 
       - name: Install Poetry
         run: |
           curl -sSL https://install.python-poetry.org | python3 -
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      - name: Install dependencies and DVC
+      - name: Install dependencies
         run: |
           poetry config virtualenvs.create false
           poetry install
+
+      - name: Install DVC with S3 support
+        run: |
           poetry add dvc[s3]
 
       - name: Configure DVC remote
@@ -37,66 +41,32 @@ jobs:
           poetry run dvc remote modify origin access_key_id ${{ secrets.DVC_ACCESS_KEY_ID }}
           poetry run dvc remote modify origin secret_access_key ${{ secrets.DVC_SECRET_ACCESS_KEY }}
 
-  fetch_data:
-    needs: setup
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend/IE-app
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: DVC Pull and Fetch Data
+      - name: DVC Pull
         run: |
           poetry run dvc pull -r origin
-          poetry run python scripts/fetch_data.py
 
-  preprocess_data:
-    needs: fetch_data
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend/IE-app
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
+      - name: Fetch Data
+        run: |
+          poetry run python scripts/fetch_data.py
 
       - name: Preprocess Data
         run: |
           poetry run python scripts/preprocess_data.py
 
-  train_model:
-    needs: preprocess_data
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend/IE-app
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
       - name: Train Model
         run: |
           poetry run python scripts/train_model.py
 
-  push_changes:
-    needs: train_model
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend/IE-app
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: DVC Add and Push Changes
+      - name: DVC Add data and models
         run: |
           poetry run dvc add data
           poetry run dvc add models
+
+      - name: DVC Push
+        run: |
           poetry run dvc push -r origin
 
-      - name: Git Operations
+      - name: Git operations
         run: |
           git config --global user.email "github-actions-bot@example.com"
           git config --global user.name "GitHub Actions"
