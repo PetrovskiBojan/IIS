@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  setup:
+  setup_and_run:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -18,12 +18,12 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.12'  # Ensure this is the Python version you need
+          python-version: '3.12'  # Ensure this is the version you need
 
       - name: Install Poetry
         run: |
           curl -sSL https://install.python-poetry.org | python -
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          echo "$PATH:$HOME/.local/bin" >> $GITHUB_ENV
 
       - name: Install dependencies
         run: |
@@ -40,57 +40,17 @@ jobs:
           dvc remote modify origin access_key_id ${{ secrets.DVC_ACCESS_KEY_ID }}
           dvc remote modify origin secret_access_key ${{ secrets.DVC_SECRET_ACCESS_KEY }}
 
-  fetch_data:
-    needs: setup
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend/IE-app
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
       - name: Fetch Data
         run: |
           poetry run python scripts/fetch_data.py
-
-  preprocess_data:
-    needs: fetch_data
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend/IE-app
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
 
       - name: Preprocess Data
         run: |
           poetry run python scripts/preprocess_data.py
 
-  train_model:
-    needs: preprocess_data
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend/IE-app
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
       - name: Train Model
         run: |
           poetry run python scripts/train_model.py
-
-  push_changes:
-    needs: train_model
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend/IE-app
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
 
       - name: DVC Add and Push
         run: |
