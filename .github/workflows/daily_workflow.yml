@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  setup_and_run:
+  setup:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -14,51 +14,72 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
-
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.12'  # Ensure this is the version you need
-
-      - name: Install Poetry
+          python-version: '3.12'
+      - name: Install Poetry and dependencies
         run: |
-          curl -sSL https://install.python-poetry.org | python -
-          echo "$PATH:$HOME/.local/bin" >> $GITHUB_ENV
-
-      - name: Install dependencies
-        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
           poetry config virtualenvs.create false
           poetry install
-
       - name: Install DVC with S3 support
         run: |
           pip install 'dvc[s3]'
-
       - name: Configure DVC remote
         run: |
           dvc remote modify origin endpointurl https://dagshub.com/PetrovskiBojan/IIS.s3
           dvc remote modify origin access_key_id ${{ secrets.DVC_ACCESS_KEY_ID }}
           dvc remote modify origin secret_access_key ${{ secrets.DVC_SECRET_ACCESS_KEY }}
 
-      - name: Fetch Data
+  fetch_data:
+    needs: setup
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend/IE-app
+    steps:
+      - name: DVC Pull and Fetch Data
         run: |
+          dvc pull -r origin
           poetry run python scripts/fetch_data.py
 
+  preprocess_data:
+    needs: fetch_data
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend/IE-app
+    steps:
       - name: Preprocess Data
         run: |
           poetry run python scripts/preprocess_data.py
 
+  train_model:
+    needs: preprocess_data
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend/IE-app
+    steps:
       - name: Train Model
         run: |
           poetry run python scripts/train_model.py
 
-      - name: DVC Add and Push
+  push_changes:
+    needs: train_model
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend/IE-app
+    steps:
+      - name: DVC Add and Push Changes
         run: |
           poetry run dvc add data
           poetry run dvc add models
           poetry run dvc push -r origin
-
-      - name: Git Operations
+      - name: Git operations
         run: |
           git config --global user.email "github-actions-bot@example.com"
           git config --global user.name "GitHub Actions"
