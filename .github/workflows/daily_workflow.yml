@@ -9,7 +9,7 @@ jobs:
   setup:
     runs-on: ubuntu-latest
     outputs:
-      poetry-path: /home/runner/.local/bin/poetry
+      poetry-path: ${{ steps.install-poetry.outputs.poetry-path }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -19,15 +19,17 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install Poetry
+      - id: install-poetry
+        name: Install Poetry
         run: |
           curl -sSL https://install.python-poetry.org | python3 -
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          echo "${HOME}/.local/bin" >> $GITHUB_PATH
+          echo "::set-output name=poetry-path::${HOME}/.local/bin/poetry"
 
       - name: Install dependencies
         run: |
-          ${{ outputs.poetry-path }} config virtualenvs.create false
-          ${{ outputs.poetry-path }} install
+          ${{ steps.install-poetry.outputs.poetry-path }} config virtualenvs.create false
+          ${{ steps.install-poetry.outputs.poetry-path }} install
 
   fetch_data:
     needs: setup
