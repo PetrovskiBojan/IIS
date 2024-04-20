@@ -19,7 +19,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.12' 
+          python-version: '3.12'  # Adjust this to the Python version you use
 
       - name: Install Poetry
         run: |
@@ -31,9 +31,9 @@ jobs:
           poetry config virtualenvs.create false
           poetry install
 
-      - name: Install DVC
+      - name: Install DVC with S3 support
         run: |
-          pip install dvc
+          pip install 'dvc[s3]'
 
       - name: Configure DVC remote
         run: |
