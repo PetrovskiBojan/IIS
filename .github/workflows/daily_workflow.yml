@@ -3,7 +3,7 @@ name: Daily Model Training
 on:
   schedule:
     - cron: '30 16 * * *'  # Runs at 16:30 UTC every day
-  workflow_dispatch:  # Enables manual trigger through GitHub Actions UI
+  workflow_dispatch:
 
 jobs:
   train-and-push:
@@ -15,7 +15,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.8'  # Specify the Python version used in the project
+          python-version: '3.8'  # Adjust this as necessary
 
       - name: Install Poetry
         run: |
@@ -25,36 +25,33 @@ jobs:
         run: |
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
+      - name: Change to Project Directory
+        run: cd backend/IE-app  # Adjust this path to where your pyproject.toml is located
+
       - name: Install dependencies
         run: |
           poetry config virtualenvs.create false
           poetry install
 
       - name: Fetch data
-        run: |
-          poetry run python backend/IE-app/scripts/fetch_data.py
+        run: poetry run python scripts/fetch_data.py
 
       - name: Preprocess data
-        run: |
-          poetry run python backend/IE-app/scripts/preprocess_data.py
+        run: poetry run python scripts/preprocess_data.py
 
       - name: Train model
-        run: |
-          poetry run python backend/IE-app/scripts/train_model.py
+        run: poetry run python scripts/train_model.py
 
       - name: DVC Add data and models
         run: |
-          poetry run dvc add backend/IE-app/data
-          poetry run dvc add backend/IE-app/models
+          poetry run dvc add data
+          poetry run dvc add models
 
       - name: DVC Push
-        run: |
-          poetry run dvc push -r origin
+        run: poetry run dvc push -r origin
 
       - name: Git operations
         run: |
-          git config --global user.email "you@example.com"
-          git config --global user.name "Your Name"
           git add .
           git commit -m "My daily workflow pipeline"
           git push
