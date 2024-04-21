@@ -8,9 +8,6 @@ on:
 jobs:
   setup:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend/IE-app
 
     steps:
       - name: Checkout repository
@@ -28,6 +25,7 @@ jobs:
 
       - name: Install dependencies
         run: |
+          cd backend/IE-app
           poetry config virtualenvs.create false
           poetry install
 
@@ -37,6 +35,7 @@ jobs:
 
       - name: Configure DVC remote
         run: |
+          cd backend/IE-app
           dvc remote modify origin endpointurl https://dagshub.com/PetrovskiBojan/IIS.s3
           dvc remote modify origin access_key_id ${{ secrets.DVC_ACCESS_KEY_ID }}
           dvc remote modify origin secret_access_key ${{ secrets.DVC_SECRET_ACCESS_KEY }}
@@ -44,61 +43,64 @@ jobs:
   fetch_data:
     needs: setup
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend/IE-app
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
       - name: DVC Pull
         run: |
-          cd ..
-          cd ..
-          dvc pull -r origin
           cd backend/IE-app
+          dvc pull -r origin
 
       - name: Fetch Data
         run: |
+          cd backend/IE-app
           poetry run python scripts/fetch_data.py
 
   preprocess_data:
     needs: fetch_data
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend/IE-app
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
       - name: Preprocess Data
         run: |
+          cd backend/IE-app
           poetry run python scripts/preprocess_data.py
 
   train_model:
     needs: preprocess_data
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend/IE-app
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
       - name: Train Model
         run: |
+          cd backend/IE-app
           poetry run python scripts/train_model.py
 
   push_changes:
     needs: train_model
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend/IE-app
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
       - name: DVC Add data and models
         run: |
+          cd backend/IE-app
           poetry run dvc add data
           poetry run dvc add models
 
       - name: DVC Push
         run: |
+          cd backend/IE-app
           poetry run dvc push -r origin
 
       - name: Git operations
