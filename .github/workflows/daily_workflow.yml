@@ -97,6 +97,6 @@ jobs:
         run: |
           git config --global user.email "github-actions-bot@example.com"
           git config --global user.name "GitHub Actions"
-          git add .
+          git add.
           git commit -m "My daily workflow pipeline" || echo "No changes to commit"
           git push
