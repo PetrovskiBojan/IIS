@@ -41,14 +41,13 @@ jobs:
       - name: Commit and Push Changes
         run: |
           dvc add data
+          git add data.dvc data/
           dvc push -r origin
           git config --global user.email "github-actions-bot@example.com"
           git config --global user.name "GitHub Actions"
-          git add .
-          git commit -m "Update fetched data"
-          git push
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Update fetched data" && git push)
 
-   preprocess_data:
+  preprocess_data:
     needs: fetch_data
     runs-on: ubuntu-latest
     defaults:
@@ -78,12 +77,7 @@ jobs:
         run: |
           dvc add data
           git add data.dvc data/
-          git add .dvc/config
-      - name: DVC Push
-        run: |
           dvc push -r origin
-      - name: Commit and Push Changes
-        run: |
           git config --global user.email "github-actions-bot@example.com"
           git config --global user.name "GitHub Actions"
           git diff --quiet && git diff --staged --quiet || (git commit -m "Update preprocessed data" && git push)
@@ -117,9 +111,8 @@ jobs:
       - name: Commit and Push Changes
         run: |
           dvc add models
+          git add models.dvc models/
           dvc push -r origin
           git config --global user.email "github-actions-bot@example.com"
           git config --global user.name "GitHub Actions"
-          git add .
-          git commit -m "Update trained models"
-          git push
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Update trained models" and git push)
