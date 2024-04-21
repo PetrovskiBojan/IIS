@@ -6,56 +6,47 @@ on:
   workflow_dispatch:
 
 jobs:
-  setup:
+  fetch_data:
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: backend/IE-app
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
-
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
           python-version: '3.12'
-
       - name: Install Poetry
         run: |
           curl -sSL https://install.python-poetry.org | python3 -
           echo "$HOME/.local/bin" >> $GITHUB_PATH
-
       - name: Install dependencies
         run: |
           poetry config virtualenvs.create false
           poetry install
-
       - name: Install DVC with S3 support
         run: |
           pip install 'dvc[s3]'
-
-      - name: Configure DVC remote
+      - name: Configure DVC remote and Pull
         run: |
           dvc remote modify origin endpointurl https://dagshub.com/PetrovskiBojan/IIS.s3
           dvc remote modify origin access_key_id ${{ secrets.DVC_ACCESS_KEY_ID }}
           dvc remote modify origin secret_access_key ${{ secrets.DVC_SECRET_ACCESS_KEY }}
-
-  fetch_data:
-    needs: setup
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend/IE-app
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-      - name: DVC Pull for data fetching
-        run: |
           dvc pull -r origin
       - name: Fetch Data
         run: |
           poetry run python scripts/fetch_data.py
+      - name: Commit and Push Changes
+        run: |
+          dvc add data
+          dvc push -r origin
+          git config --global user.email "github-actions-bot@example.com"
+          git config --global user.name "GitHub Actions"
+          git add .
+          git commit -m "Update fetched data"
+          git push
 
   preprocess_data:
     needs: fetch_data
@@ -66,12 +57,32 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
-      - name: DVC Pull for data preprocessing
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.12'
+      - name: Install Poetry and dependencies
         run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          poetry config virtualenvs.create false
+          poetry install
+      - name: Install DVC with S3 support and Pull
+        run: |
+          pip install 'dvc[s3]'
           dvc pull -r origin
       - name: Preprocess Data
         run: |
           poetry run python scripts/preprocess_data.py
+      - name: Commit and Push Changes
+        run: |
+          dvc add data
+          dvc push -r origin
+          git config --global user.email "github-actions-bot@example.com"
+          git config --global user.name "GitHub Actions"
+          git add .
+          git commit -m "Update preprocessed data"
+          git push
 
   train_model:
     needs: preprocess_data
@@ -82,41 +93,29 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
-      - name: DVC Pull for model training
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.12'
+      - name: Install Poetry and dependencies
         run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          poetry config virtualenvs.create false
+          poetry install
+      - name: Install DVC with S3 support and Pull
+        run: |
+          pip install 'dvc[s3]'
           dvc pull -r origin
       - name: Train Model
         run: |
           poetry run python scripts/train_model.py
-
-  dvc_push:
-    needs: train_model
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend/IE-app
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-      - name: DVC Add and Push
+      - name: Commit and Push Changes
         run: |
-          poetry run dvc add data
-          poetry run dvc add models
-          poetry run dvc push -r origin
-
-  git_operations:
-    needs: dvc_push
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend/IE-app
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-      - name: Git Operations
-        run: |
+          dvc add models
+          dvc push -r origin
           git config --global user.email "github-actions-bot@example.com"
           git config --global user.name "GitHub Actions"
           git add .
-          git commit -m "Update data and models" || echo "No changes to commit"
+          git commit -m "Update trained models"
           git push
