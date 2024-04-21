@@ -31,13 +31,6 @@ jobs:
           poetry config virtualenvs.create false
           poetry install
 
-  tech-data:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend/IE-app
-
-    steps:
       - name: Install DVC with S3 support
         run: |
           pip install 'dvc[s3]'
@@ -52,27 +45,25 @@ jobs:
         run: |
           dvc pull -r origin
 
-  preprocess-data:
+  fetch-data:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend/IE-app
-
+    needs: setup
     steps:
       - name: Fetch Data
         run: |
           poetry run python scripts/fetch_data.py
 
+  preprocess-data:
+    runs-on: ubuntu-latest
+    needs: fetch-data
+    steps:
       - name: Preprocess Data
         run: |
           poetry run python scripts/preprocess_data.py
 
   train-model:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend/IE-app
-
+    needs: preprocess-data
     steps:
       - name: Train Model
         run: |
@@ -80,10 +71,7 @@ jobs:
 
   push-changes:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend/IE-app
-
+    needs: train-model
     steps:
       - name: DVC Add data and models
         run: |
