@@ -8,9 +8,8 @@ on:
 jobs:
   setup:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend/IE-app
+    outputs:
+      poetry-path: ${{ steps.set-path.outputs.poetry-path }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -23,12 +22,16 @@ jobs:
       - name: Install Poetry
         run: |
           curl -sSL https://install.python-poetry.org | python3 -
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          echo "PATH=$HOME/.local/bin:$PATH" >> $GITHUB_ENV
 
       - name: Install dependencies
         run: |
           poetry config virtualenvs.create false
           poetry install
+
+      - name: Set Poetry Path
+        id: set-path
+        run: echo "::set-output name=poetry-path::$HOME/.local/bin"
 
       - name: Install DVC with S3 support
         run: |
@@ -43,11 +46,10 @@ jobs:
   fetch_data:
     needs: setup
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend/IE-app
     steps:
       - uses: actions/checkout@v2
+      - name: Set PATH
+        run: echo "PATH=${{ needs.setup.outputs.poetry-path }}:$PATH" >> $GITHUB_ENV
       - name: Fetch Data
         run: |
           poetry run python scripts/fetch_data.py
@@ -55,11 +57,10 @@ jobs:
   preprocess_data:
     needs: fetch_data
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend/IE-app
     steps:
       - uses: actions/checkout@v2
+      - name: Set PATH
+        run: echo "PATH=${{ needs.setup.outputs.poetry-path }}:$PATH" >> $GITHUB_ENV
       - name: Preprocess Data
         run: |
           poetry run python scripts/preprocess_data.py
@@ -67,11 +68,10 @@ jobs:
   train_model:
     needs: preprocess_data
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend/IE-app
     steps:
       - uses: actions/checkout@v2
+      - name: Set PATH
+        run: echo "PATH=${{ needs.setup.outputs.poetry-path }}:$PATH" >> $GITHUB_ENV
       - name: Train Model
         run: |
           poetry run python scripts/train_model.py
@@ -79,11 +79,10 @@ jobs:
   push_changes:
     needs: train_model
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend/IE-app
     steps:
       - uses: actions/checkout@v2
+      - name: Set PATH
+        run: echo "PATH=${{ needs.setup.outputs.poetry-path }}:$PATH" >> $GITHUB_ENV
       - name: DVC Add data and models
         run: |
           poetry run dvc add data
