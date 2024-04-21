@@ -2,35 +2,31 @@ name: Daily Model Training
 
 on:
   schedule:
-    - cron: '30 16 * * *'  # Runs at 16:30 UTC every day
+    - cron: '30 16 * * *'
   workflow_dispatch:
 
 jobs:
   setup:
     runs-on: ubuntu-latest
-    outputs:
-      poetry-path: ${{ steps.install-poetry.outputs.poetry-path }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Set up Python
+      - name: Set up Python 3.12
         uses: actions/setup-python@v2
         with:
           python-version: '3.12'
 
-      - id: install-poetry
-        name: Install Poetry
+      - name: Install Poetry
         run: |
           curl -sSL https://install.python-poetry.org | python3 -
           echo "${HOME}/.local/bin" >> $GITHUB_PATH
-          echo "::set-output name=poetry-path::${HOME}/.local/bin/poetry"
 
       - name: Install dependencies
         run: |
           poetry config virtualenvs.create false
           poetry install
-        working-directory: backend/IE-app  # This should correctly point to the directory containing pyproject.toml
+        working-directory: backend/IE-app
 
   fetch_data:
     needs: setup
@@ -39,10 +35,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Install Poetry locally for job
+      - name: Install dependencies if needed
         run: |
-          curl -sSL https://install.python-poetry.org | python3 -
-          echo "${HOME}/.local/bin" >> $GITHUB_PATH
+          poetry install
         working-directory: backend/IE-app
 
       - name: DVC Pull and Fetch Data
@@ -58,12 +53,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Install Poetry locally for job
-        run: |
-          curl -sSL https://install.python-poetry.org | python3 -
-          echo "${HOME}/.local/bin" >> $GITHUB_PATH
-        working-directory: backend/IE-app
-
       - name: Preprocess Data
         run: |
           poetry run python scripts/preprocess_data.py
@@ -76,12 +65,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Install Poetry locally for job
-        run: |
-          curl -sSL https://install.python-poetry.org | python3 -
-          echo "${HOME}/.local/bin" >> $GITHUB_PATH
-        working-directory: backend/IE-app
-
       - name: Train Model
         run: |
           poetry run python scripts/train_model.py
@@ -93,12 +76,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
-
-      - name: Install Poetry locally for job
-        run: |
-          curl -sSL https://install.python-poetry.org | python3 -
-          echo "${HOME}/.local/bin" >> $GITHUB_PATH
-        working-directory: backend/IE-app
 
       - name: DVC Add and Push Changes
         run: |
