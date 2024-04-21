@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  # Checkout code and setup environment
+  # Checkout code and setup environment (fixed poetry command)
   setup:
     runs-on: ubuntu-latest
     steps:
@@ -18,9 +18,11 @@ jobs:
         run: |
           curl -sSL https://install.python-poetry.org | python3 -
           echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Configure Poetry (fixed path to pyproject.toml)
+        run: |
+          cd backend/IE-app && poetry config virtualenvs.create false
       - name: Install dependencies
         run: |
-          poetry config virtualenvs.create false
           poetry install
       - name: Install DVC with S3 support
         run: |
@@ -84,3 +86,4 @@ jobs:
           git add .
           git commit -m "My daily workflow pipeline" || echo "No changes to commit"
           git push
+
