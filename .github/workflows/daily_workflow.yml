@@ -8,8 +8,9 @@ on:
 jobs:
   setup:
     runs-on: ubuntu-latest
-    outputs:
-      cache-key: ${{ steps.cache-keys.outputs.key }}
+    defaults:
+      run:
+        working-directory: backend/IE-app
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -42,6 +43,9 @@ jobs:
   fetch_data:
     needs: setup
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend/IE-app
     steps:
       - uses: actions/checkout@v2
       - name: Fetch Data
@@ -51,6 +55,9 @@ jobs:
   preprocess_data:
     needs: fetch_data
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend/IE-app
     steps:
       - uses: actions/checkout@v2
       - name: Preprocess Data
@@ -60,6 +67,9 @@ jobs:
   train_model:
     needs: preprocess_data
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend/IE-app
     steps:
       - uses: actions/checkout@v2
       - name: Train Model
@@ -69,6 +79,9 @@ jobs:
   push_changes:
     needs: train_model
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend/IE-app
     steps:
       - uses: actions/checkout@v2
       - name: DVC Add data and models
