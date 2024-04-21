@@ -38,14 +38,16 @@ jobs:
       - name: Fetch Data
         run: |
           poetry run python scripts/fetch_data.py
-      - name: Commit and Push Changes
+      - name: Add changes to DVC
         run: |
           dvc add data
           git add data.dvc data/
-          dvc push -r origin
           git config --global user.email "github-actions-bot@example.com"
           git config --global user.name "GitHub Actions"
           git diff --quiet && git diff --staged --quiet || (git commit -m "Update fetched data" && git push)
+      - name: Push DVC changes
+        run: |
+          dvc push -r origin
 
   preprocess_data:
     needs: fetch_data
@@ -73,14 +75,14 @@ jobs:
       - name: Preprocess Data
         run: |
           poetry run python scripts/preprocess_data.py
-      - name: Add changes to DVC and Git
+      - name: Add changes to DVC
         run: |
           dvc add data
           git add data.dvc data/
-          dvc push -r origin
-          git config --global user.email "github-actions-bot@example.com"
-          git config --global user.name "GitHub Actions"
           git diff --quiet && git diff --staged --quiet || (git commit -m "Update preprocessed data" && git push)
+      - name: Push DVC changes
+        run: |
+          dvc push -r origin
 
   train_model:
     needs: preprocess_data
@@ -108,11 +110,11 @@ jobs:
       - name: Train Model
         run: |
           poetry run python scripts/train_model.py
-      - name: Commit and Push Changes
+      - name: Add changes to DVC
         run: |
           dvc add models
           git add models.dvc models/
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Update trained models" && git push)
+      - name: Push DVC changes
+        run: |
           dvc push -r origin
-          git config --global user.email "github-actions-bot@example.com"
-          git config --global user.name "GitHub Actions"
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Update trained models" and git push)
