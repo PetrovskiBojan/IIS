@@ -2,12 +2,14 @@ name: Daily Model Training
 
 on:
   schedule:
-    - cron: '30 16 * * *'
+    - cron: '30 16 * * *'  # Runs at 16:30 UTC every day
   workflow_dispatch:
 
 jobs:
   setup:
     runs-on: ubuntu-latest
+    outputs:
+      poetry-path: ${{ steps.install-poetry.outputs.poetry-path }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -17,10 +19,12 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install Poetry
+      - id: install-poetry
+        name: Install Poetry
         run: |
           curl -sSL https://install.python-poetry.org | python3 -
           echo "${HOME}/.local/bin" >> $GITHUB_PATH
+          echo "::set-output name=poetry-path::${HOME}/.local/bin/poetry"
 
       - name: Install dependencies
         run: |
@@ -35,8 +39,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Install dependencies if needed
+      - name: Set up Python and Poetry
         run: |
+          echo "${HOME}/.local/bin" >> $GITHUB_PATH
           poetry install
         working-directory: backend/IE-app
 
@@ -53,6 +58,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
+      - name: Set up Python and Poetry
+        run: |
+          echo "${HOME}/.local/bin" >> $GITHUB_PATH
+          poetry install
+        working-directory: backend/IE-app
+
       - name: Preprocess Data
         run: |
           poetry run python scripts/preprocess_data.py
@@ -65,6 +76,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
+      - name: Set up Python and Poetry
+        run: |
+          echo "${HOME}/.local/bin" >> $GITHUB_PATH
+          poetry install
+        working-directory: backend/IE-app
+
       - name: Train Model
         run: |
           poetry run python scripts/train_model.py
@@ -76,6 +93,12 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
+
+      - name: Set up Python and Poetry
+        run: |
+          echo "${HOME}/.local/bin" >> $GITHUB_PATH
+          poetry install
+        working-directory: backend/IE-app
 
       - name: DVC Add and Push Changes
         run: |
