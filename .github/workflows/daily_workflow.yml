@@ -9,7 +9,7 @@ jobs:
   setup:
     runs-on: ubuntu-latest
     outputs:
-      poetry-path: ${{ steps.setup-env.outputs.poetry-path }}
+      poetry-path: ${{ steps.install-poetry.outputs.poetry-path }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -19,11 +19,10 @@ jobs:
         with:
           python-version: '3.12'
 
-      - id: setup-env
+      - id: install-poetry
         name: Install Poetry
         run: |
           curl -sSL https://install.python-poetry.org | python3 -
-          echo "POETRY_HOME=${HOME}/.local" >> $GITHUB_ENV
           echo "${HOME}/.local/bin" >> $GITHUB_PATH
           echo "::set-output name=poetry-path::${HOME}/.local/bin/poetry"
 
@@ -31,57 +30,82 @@ jobs:
         run: |
           poetry config virtualenvs.create false
           poetry install
-        working-directory: backend/IE-app
+        working-directory: backend/IE-app  # This should correctly point to the directory containing pyproject.toml
 
   fetch_data:
     needs: setup
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend/IE-app
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
+
+      - name: Install Poetry locally for job
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "${HOME}/.local/bin" >> $GITHUB_PATH
+        working-directory: backend/IE-app
 
       - name: DVC Pull and Fetch Data
         run: |
           poetry run dvc pull -r origin
           poetry run python scripts/fetch_data.py
+        working-directory: backend/IE-app
 
   preprocess_data:
     needs: fetch_data
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend/IE-app
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install Poetry locally for job
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "${HOME}/.local/bin" >> $GITHUB_PATH
+        working-directory: backend/IE-app
+
       - name: Preprocess Data
         run: |
           poetry run python scripts/preprocess_data.py
+        working-directory: backend/IE-app
 
   train_model:
     needs: preprocess_data
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend/IE-app
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install Poetry locally for job
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "${HOME}/.local/bin" >> $GITHUB_PATH
+        working-directory: backend/IE-app
+
       - name: Train Model
         run: |
           poetry run python scripts/train_model.py
+        working-directory: backend/IE-app
 
   push_changes:
     needs: train_model
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend/IE-app
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install Poetry locally for job
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "${HOME}/.local/bin" >> $GITHUB_PATH
+        working-directory: backend/IE-app
+
       - name: DVC Add and Push Changes
         run: |
           poetry run dvc add data
           poetry run dvc add models
           poetry run dvc push -r origin
+        working-directory: backend/IE-app
 
       - name: Git operations
         run: |
@@ -90,3 +114,4 @@ jobs:
           git add .
           git commit -m "My daily workflow pipeline" || echo "No changes to commit"
           git push
+        working-directory: backend/IE-app
