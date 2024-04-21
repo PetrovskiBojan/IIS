@@ -11,31 +11,43 @@ jobs:
     defaults:
       run:
         working-directory: backend/IE-app
+    outputs:
+      poetry-path: ${{ steps.setup-env.outputs.poetry-path }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Set up Python and Poetry
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.12'  # Ensure this matches the Python version used in your project
+
+      - name: Install Poetry
         run: |
-          echo "Setting up Python"
-          sudo apt-get update
-          sudo apt-get install -y python3.12 python3-pip
-          echo "Installing Poetry"
           curl -sSL https://install.python-poetry.org | python3 -
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-          poetry config virtualenvs.create false
+          echo "PATH=$HOME/.local/bin:$PATH" >> $GITHUB_ENV
 
       - name: Install dependencies
         run: |
+          poetry config virtualenvs.create false
           poetry install
 
-      - name: Configure and Pull DVC
+      - name: Install DVC with S3 support
         run: |
           pip install 'dvc[s3]'
+
+      - name: Configure DVC remote
+        run: |
           dvc remote modify origin endpointurl https://dagshub.com/PetrovskiBojan/IIS.s3
           dvc remote modify origin access_key_id ${{ secrets.DVC_ACCESS_KEY_ID }}
           dvc remote modify origin secret_access_key ${{ secrets.DVC_SECRET_ACCESS_KEY }}
+
+      - name: DVC Pull
+        run: |
           dvc pull -r origin
+
+      - id: setup-env
+        run: echo "::set-output name=poetry-path::$HOME/.local/bin"
 
   fetch_data:
     needs: setup
@@ -47,17 +59,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Set up Python and Poetry
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y python3.12 python3-pip
-          curl -sSL https://install.python-poetry.org | python3 -
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-          poetry config virtualenvs.create false
+      - name: Setup environment
+        run: echo "PATH=${{ needs.setup.outputs.poetry-path }}:$PATH" >> $GITHUB_ENV
 
       - name: Fetch Data
         run: |
-          poetry install
           poetry run python scripts/fetch_data.py
 
   preprocess_data:
@@ -70,17 +76,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Set up Python and Poetry
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y python3.12 python3-pip
-          curl -sSL https://install.python-poetry.org | python3 -
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-          poetry config virtualenvs.create false
+      - name: Setup environment
+        run: echo "PATH=${{ needs.setup.outputs.poetry-path }}:$PATH" >> $GITHUB_ENV
 
       - name: Preprocess Data
         run: |
-          poetry install
           poetry run python scripts/preprocess_data.py
 
   train_model:
@@ -93,17 +93,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Set up Python and Poetry
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y python3.12 python3-pip
-          curl -sSL https://install.python-poetry.org | python3 -
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-          poetry config virtualenvs.create false
+      - name: Setup environment
+        run: echo "PATH=${{ needs.setup.outputs.poetry-path }}:$PATH" >> $GITHUB_ENV
 
       - name: Train Model
         run: |
-          poetry install
           poetry run python scripts/train_model.py
 
   wrap_up:
@@ -116,19 +110,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Set up Python and Poetry
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y python3.12 python3-pip
-          curl -sSL https://install.python-poetry.org | python3 -
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-          poetry config virtualenvs.create false
+      - name: Setup environment
+        run: echo "PATH=${{ needs.setup.outputs.poetry-path }}:$PATH" >> $GITHUB_ENV
 
-      - name: Finalize Data and Models
+      - name: DVC Add data and models
         run: |
-          poetry install
           poetry run dvc add data
           poetry run dvc add models
+
+      - name: DVC Push
+        run: |
           poetry run dvc push -r origin
 
       - name: Git operations
