@@ -11,6 +11,7 @@ jobs:
     defaults:
       run:
         working-directory: backend/IE-app
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -30,27 +31,14 @@ jobs:
           poetry config virtualenvs.create false
           poetry install
 
-      - name: Install DVC with S3 support
-        run: |
-          pip install 'dvc[s3]'
-
-      - name: Configure DVC remote
-        run: |
-          dvc remote modify origin endpointurl https://dagshub.com/PetrovskiBojan/IIS.s3
-          dvc remote modify origin access_key_id ${{ secrets.DVC_ACCESS_KEY_ID }}
-          dvc remote modify origin secret_access_key ${{ secrets.DVC_SECRET_ACCESS_KEY }}
-
   fetch-data:
     needs: setup
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: backend/IE-app
-    steps:
-      - name: DVC Pull
-        run: |
-          dvc pull -r origin
 
+    steps:
       - name: Fetch Data
         run: |
           poetry run python scripts/fetch_data.py
@@ -61,6 +49,7 @@ jobs:
     defaults:
       run:
         working-directory: backend/IE-app
+
     steps:
       - name: Preprocess Data
         run: |
@@ -72,6 +61,7 @@ jobs:
     defaults:
       run:
         working-directory: backend/IE-app
+
     steps:
       - name: Train Model
         run: |
@@ -83,6 +73,7 @@ jobs:
     defaults:
       run:
         working-directory: backend/IE-app
+
     steps:
       - name: DVC Add data and models
         run: |
