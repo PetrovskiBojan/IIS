@@ -2,7 +2,7 @@ name: Daily Model Training
 
 on:
   schedule:
-    - cron: '30 16 * * *' # Runs at 16:30 UTC every day
+    - cron: '30 16 * * *'  # Runs at 16:30 UTC every day
   workflow_dispatch:
 
 jobs:
@@ -12,92 +12,92 @@ jobs:
       run:
         working-directory: backend/IE-app
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
+steps:
+  - name: Checkout repository
+    uses: actions/checkout@v2
 
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.12' # Ensure this matches the Python version used in your project
+  - name: Set up Python
+    uses: actions/setup-python@v2
+    with:
+      python-version: '3.12'  # Ensure this matches the Python version used in your project
 
-      - name: Install Poetry
-        run: |
-          curl -sSL https://install.python-poetry.org | python3 -
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+  - name: Install Poetry
+    run: |
+      curl -sSL https://install.python-poetry.org | python3 -
+      echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      - name: Install dependencies
-        run: |
-          poetry config virtualenvs.create false
-          poetry install
-
-      - name: Install DVC with S3 support
-        run: |
-          pip install 'dvc[s3]'
-
-      - name: Configure DVC remote
-        run: |
-          dvc remote modify origin endpointurl https://dagshub.com/PetrovskiBojan/IIS.s3
-          dvc remote modify origin access_key_id ${{ secrets.DVC_ACCESS_KEY_ID }}
-          dvc remote modify origin secret_access_key ${{ secrets.DVC_SECRET_ACCESS_KEY }}
-
-      - name: DVC Pull
-        run: |
-          dvc pull -r origin
-
-  fetch-data:
+  - name: Install dependencies
+    run: |
+      poetry config virtualenvs.create false
+      poetry install
+  tech-data:
     runs-on: ubuntu-latest
     needs: setup
     defaults:
       run:
         working-directory: backend/IE-app
-    steps:
-      - name: Fetch Data
-        run: |
-          poetry run python scripts/fetch_data.py
 
+steps:
+  - name: Install DVC with S3 support
+    run: |
+      pip install 'dvc[s3]'
+
+  - name: Configure DVC remote
+    run: |
+      dvc remote modify origin endpointurl https://dagshub.com/PetrovskiBojan/IIS.s3
+      dvc remote modify origin access_key_id ${{ secrets.DVC_ACCESS_KEY_ID }}
+      dvc remote modify origin secret_access_key ${{ secrets.DVC_SECRET_ACCESS_KEY }}
+
+  - name: DVC Pull
+    run: |
+      dvc pull -r origin
   preprocess-data:
     runs-on: ubuntu-latest
-    needs: setup
+    needs: tech-data
     defaults:
       run:
         working-directory: backend/IE-app
-    steps:
-      - name: Preprocess Data
-        run: |
-          poetry run python scripts/preprocess_data.py
 
+steps:
+  - name: Fetch Data
+    run: |
+      poetry run python scripts/fetch_data.py
+
+  - name: Preprocess Data
+    run: |
+      poetry run python scripts/preprocess_data.py
   train-model:
     runs-on: ubuntu-latest
-    needs: setup
+    needs: preprocess-data
     defaults:
       run:
         working-directory: backend/IE-app
-    steps:
-      - name: Train Model
-        run: |
-          poetry run python scripts/train_model.py
 
+steps:
+  - name: Train Model
+    run: |
+      poetry run python scripts/train_model.py
+
+  - name: DVC Add data and models
+    run: |
+      poetry run dvc add data
+      poetry run dvc add models
   push-changes:
     runs-on: ubuntu-latest
-    needs: setup
+    needs: train-model
     defaults:
       run:
         working-directory: backend/IE-app
-    steps:
-      - name: DVC Add data and models
-        run: |
-          poetry run dvc add data
-          poetry run dvc add models
 
-      - name: DVC Push
-        run: |
-          poetry run dvc push -r origin
+steps:
+  - name: DVC Push
+    run: |
+      poetry run dvc push -r origin
 
-      - name: Git operations
-        run: |
-          git config --global user.email "github-actions-bot@example.com"
-          git config --global user.name "GitHub Actions"
-          git add .
-          git commit -m "My daily workflow pipeline" || echo "No changes to commit"
-          git push
+  - name: Git operations
+    run: |
+      git config --global user.email "github-actions-bot@example.com"
+      git config --global user.name "GitHub Actions"
+      git add .
+      git commit -m "My daily workflow pipeline" || echo "No changes to commit"
+      git push
