@@ -11,7 +11,6 @@ jobs:
     defaults:
       run:
         working-directory: backend/IE-app
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -38,17 +37,8 @@ jobs:
       - name: Configure DVC remote
         run: |
           dvc remote modify origin endpointurl https://dagshub.com/PetrovskiBojan/IIS.s3
-          dvc remote modify origin access_key_id ${secrets.DVC_ACCESS_KEY_ID }
-          dvc remote modify origin secret_access_key ${ secrets.DVC_SECRET_ACCESS_KEY }
-
-      - name: Save DVC config
-        run: |
-          dvc config --local core.autostage true
-          dvc config --local cache.type reflink,hardlink,symlink,copy
-          dvc config --local remote.origin.url https://dagshub.com/PetrovskiBojan/IIS.s3
-          dvc config --local remote.origin.endpointurl https://dagshub.com/PetrovskiBojan/IIS.s3
-          dvc config --local remote.origin.access_key_id ${ secrets.DVC_ACCESS_KEY_ID }
-          dvc config --local remote.origin.secret_access_key ${ secrets.DVC_SECRET_ACCESS_KEY }
+          dvc remote modify origin access_key_id ${{ secrets.DVC_ACCESS_KEY_ID }}
+          dvc remote modify origin secret_access_key ${{ secrets.DVC_SECRET_ACCESS_KEY }}
 
   fetch-data:
     needs: setup
@@ -56,25 +46,10 @@ jobs:
     defaults:
       run:
         working-directory: backend/IE-app
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.12'  # Ensure this matches the Python version used in your project
-
-      - name: Install Poetry
+      - name: DVC Pull
         run: |
-          curl -sSL https://install.python-poetry.org | python3 -
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-
-      - name: Install dependencies
-        run: |
-          poetry config virtualenvs.create false
-          poetry install
+          dvc pull -r origin
 
       - name: Fetch Data
         run: |
@@ -86,26 +61,7 @@ jobs:
     defaults:
       run:
         working-directory: backend/IE-app
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.12'  # Ensure this matches the Python version used in your project
-
-      - name: Install Poetry
-        run: |
-          curl -sSL https://install.python-poetry.org | python3 -
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-
-      - name: Install dependencies
-        run: |
-          poetry config virtualenvs.create false
-          poetry install
-
       - name: Preprocess Data
         run: |
           poetry run python scripts/preprocess_data.py
@@ -116,56 +72,18 @@ jobs:
     defaults:
       run:
         working-directory: backend/IE-app
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.12'  # Ensure this matches the Python version used in your project
-
-      - name: Install Poetry
-        run: |
-          curl -sSL https://install.python-poetry.org | python3 -
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-
-      - name: Install dependencies
-        run: |
-          poetry config virtualenvs.create false
-          poetry install
-
       - name: Train Model
         run: |
           poetry run python scripts/train_model.py
 
-  commit-changes:
+  push-changes:
     needs: train-model
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: backend/IE-app
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.12'  # Ensure this matches the Python version used in your project
-
-      - name: Install Poetry
-        run: |
-          curl -sSL https://install.python-poetry.org | python3 -
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-
-      - name: Install dependencies
-        run: |
-          poetry config virtualenvs.create false
-          poetry install
-
       - name: DVC Add data and models
         run: |
           poetry run dvc add data
