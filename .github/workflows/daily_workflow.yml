@@ -48,7 +48,7 @@ jobs:
           git commit -m "Update fetched data"
           git push
 
-  preprocess_data:
+   preprocess_data:
     needs: fetch_data
     runs-on: ubuntu-latest
     defaults:
@@ -67,27 +67,26 @@ jobs:
           echo "$HOME/.local/bin" >> $GITHUB_PATH
           poetry config virtualenvs.create false
           poetry install
-      - name: Install DVC with S3 support
+      - name: Install DVC with S3 support and Pull
         run: |
           pip install 'dvc[s3]'
-      - name: Configure DVC remote and Pull
-        run: |
-          dvc remote modify origin endpointurl https://dagshub.com/PetrovskiBojan/IIS.s3
-          dvc remote modify origin access_key_id ${{ secrets.DVC_ACCESS_KEY_ID }}
-          dvc remote modify origin secret_access_key ${{ secrets.DVC_SECRET_ACCESS_KEY }}
           dvc pull -r origin
       - name: Preprocess Data
         run: |
           poetry run python scripts/preprocess_data.py
-      - name: Commit and Push Changes
+      - name: Add changes to DVC and Git
         run: |
           dvc add data
+          git add data.dvc data/
+          git add .dvc/config
+      - name: DVC Push
+        run: |
           dvc push -r origin
+      - name: Commit and Push Changes
+        run: |
           git config --global user.email "github-actions-bot@example.com"
           git config --global user.name "GitHub Actions"
-          git add .
-          git commit -m "Update preprocessed data"
-          git push
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Update preprocessed data" && git push)
 
   train_model:
     needs: preprocess_data
