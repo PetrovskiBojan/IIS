@@ -8,8 +8,6 @@ on:
 jobs:
   setup:
     runs-on: ubuntu-latest
-    outputs:
-      cache-key: ${{ steps.cache-key.outputs.key }}
     defaults:
       run:
         working-directory: backend/IE-app
@@ -17,33 +15,26 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.12'
-
-      - name: Install Poetry
+      - name: Set up Python and Poetry
         run: |
+          echo "Setting up Python"
+          sudo apt-get update
+          sudo apt-get install -y python3.12 python3-pip
+          echo "Installing Poetry"
           curl -sSL https://install.python-poetry.org | python3 -
           echo "$HOME/.local/bin" >> $GITHUB_PATH
+          poetry config virtualenvs.create false
 
       - name: Install dependencies
         run: |
-          poetry config virtualenvs.create false
           poetry install
 
-      - name: Install DVC with S3 support
+      - name: Configure and Pull DVC
         run: |
           pip install 'dvc[s3]'
-
-      - name: Configure DVC remote
-        run: |
           dvc remote modify origin endpointurl https://dagshub.com/PetrovskiBojan/IIS.s3
           dvc remote modify origin access_key_id ${{ secrets.DVC_ACCESS_KEY_ID }}
           dvc remote modify origin secret_access_key ${{ secrets.DVC_SECRET_ACCESS_KEY }}
-
-      - name: DVC Pull
-        run: |
           dvc pull -r origin
 
   fetch_data:
@@ -55,8 +46,18 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
+
+      - name: Set up Python and Poetry
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3.12 python3-pip
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          poetry config virtualenvs.create false
+
       - name: Fetch Data
         run: |
+          poetry install
           poetry run python scripts/fetch_data.py
 
   preprocess_data:
@@ -68,8 +69,18 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
+
+      - name: Set up Python and Poetry
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3.12 python3-pip
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          poetry config virtualenvs.create false
+
       - name: Preprocess Data
         run: |
+          poetry install
           poetry run python scripts/preprocess_data.py
 
   train_model:
@@ -81,8 +92,18 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
+
+      - name: Set up Python and Poetry
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3.12 python3-pip
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          poetry config virtualenvs.create false
+
       - name: Train Model
         run: |
+          poetry install
           poetry run python scripts/train_model.py
 
   wrap_up:
@@ -94,13 +115,22 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
-      - name: DVC Add data and models
+
+      - name: Set up Python and Poetry
         run: |
+          sudo apt-get update
+          sudo apt-get install -y python3.12 python3-pip
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          poetry config virtualenvs.create false
+
+      - name: Finalize Data and Models
+        run: |
+          poetry install
           poetry run dvc add data
           poetry run dvc add models
-      - name: DVC Push
-        run: |
           poetry run dvc push -r origin
+
       - name: Git operations
         run: |
           git config --global user.email "github-actions-bot@example.com"
