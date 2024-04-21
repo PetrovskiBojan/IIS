@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  train-and-push:
+  setup:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -41,6 +41,14 @@ jobs:
           dvc remote modify origin access_key_id ${{ secrets.DVC_ACCESS_KEY_ID }}
           dvc remote modify origin secret_access_key ${{ secrets.DVC_SECRET_ACCESS_KEY }}
 
+  fetch_data:
+    needs: setup
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend/IE-app
+
+    steps:
       - name: DVC Pull
         run: |
           dvc pull -r origin
@@ -49,14 +57,38 @@ jobs:
         run: |
           poetry run python scripts/fetch_data.py
 
+  preprocess_data:
+    needs: fetch_data
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend/IE-app
+
+    steps:
       - name: Preprocess Data
         run: |
           poetry run python scripts/preprocess_data.py
 
+  train_model:
+    needs: preprocess_data
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend/IE-app
+
+    steps:
       - name: Train Model
         run: |
           poetry run python scripts/train_model.py
 
+  push_changes:
+    needs: train_model
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend/IE-app
+
+    steps:
       - name: DVC Add data and models
         run: |
           poetry run dvc add data
