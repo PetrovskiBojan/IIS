@@ -72,6 +72,11 @@ jobs:
       - name: Install DVC with S3 support
         run: |
           pip install 'dvc[s3]'
+      - name: Configure DVC remote
+        run: |
+          dvc remote modify origin endpointurl https://dagshub.com/PetrovskiBojan/IIS.s3
+          dvc remote modify origin access_key_id ${{ secrets.DVC_ACCESS_KEY_ID }}
+          dvc remote modify origin secret_access_key ${{ secrets.DVC_SECRET_ACCESS_KEY }}
       - name: DVC Pull
         run: |
           dvc pull -r origin
@@ -110,6 +115,11 @@ jobs:
       - name: Install DVC with S3 support
         run: |
           pip install 'dvc[s3]'
+      - name: Configure DVC remote
+        run: |
+          dvc remote modify origin endpointurl https://dagshub.com/PetrovskiBojan/IIS.s3
+          dvc remote modify origin access_key_id ${{ secrets.DVC_ACCESS_KEY_ID }}
+          dvc remote modify origin secret_access_key ${{ secrets.DVC_SECRET_ACCESS_KEY }}
       - name: DVC Pull
         run: |
           dvc pull -r origin
