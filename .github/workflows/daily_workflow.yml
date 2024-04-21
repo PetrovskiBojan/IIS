@@ -29,24 +29,23 @@ jobs:
       - name: Install DVC with S3 support
         run: |
           pip install 'dvc[s3]'
-      - name: Configure DVC remote and Pull
+      - name: Configure DVC remote
         run: |
           dvc remote modify origin endpointurl https://dagshub.com/PetrovskiBojan/IIS.s3
           dvc remote modify origin access_key_id ${{ secrets.DVC_ACCESS_KEY_ID }}
           dvc remote modify origin secret_access_key ${{ secrets.DVC_SECRET_ACCESS_KEY }}
+      - name: DVC Pull
+        run: |
           dvc pull -r origin
       - name: Fetch Data
         run: |
           poetry run python scripts/fetch_data.py
-      - name: Add changes to DVC
+      - name: Git and DVC Operations
         run: |
           dvc add data
-          git add data.dvc data/
-          git config --global user.email "github-actions-bot@example.com"
-          git config --global user.name "GitHub Actions"
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Update fetched data" && git push)
-      - name: Push DVC changes
-        run: |
+          git add .
+          git commit -m "Update fetched data" || echo "No changes to commit"
+          git push
           dvc push -r origin
 
   preprocess_data:
@@ -62,26 +61,29 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: '3.12'
-      - name: Install Poetry and dependencies
+      - name: Install Poetry
         run: |
           curl -sSL https://install.python-poetry.org | python3 -
           echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Install dependencies
+        run: |
           poetry config virtualenvs.create false
           poetry install
-      - name: Install DVC with S3 support and Pull
+      - name: Install DVC with S3 support
         run: |
           pip install 'dvc[s3]'
+      - name: DVC Pull
+        run: |
           dvc pull -r origin
       - name: Preprocess Data
         run: |
           poetry run python scripts/preprocess_data.py
-      - name: Add changes to DVC
+      - name: Git and DVC Operations
         run: |
           dvc add data
-          git add data.dvc data/
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Update preprocessed data" && git push)
-      - name: Push DVC changes
-        run: |
+          git add .
+          git commit -m "Update preprocessed data" || echo "No changes to commit"
+          git push
           dvc push -r origin
 
   train_model:
@@ -97,24 +99,27 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: '3.12'
-      - name: Install Poetry and dependencies
+      - name: Install Poetry
         run: |
           curl -sSL https://install.python-poetry.org | python3 -
           echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Install dependencies
+        run: |
           poetry config virtualenvs.create false
           poetry install
-      - name: Install DVC with S3 support and Pull
+      - name: Install DVC with S3 support
         run: |
           pip install 'dvc[s3]'
+      - name: DVC Pull
+        run: |
           dvc pull -r origin
       - name: Train Model
         run: |
           poetry run python scripts/train_model.py
-      - name: Add changes to DVC
+      - name: Git and DVC Operations
         run: |
           dvc add models
-          git add models.dvc models/
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Update trained models" && git push)
-      - name: Push DVC changes
-        run: |
+          git add .
+          git commit -m "Update trained models" || echo "No changes to commit"
+          git push
           dvc push -r origin
