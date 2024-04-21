@@ -51,8 +51,10 @@ jobs:
     steps:
       - name: DVC Pull
         run: |
-          cd backend/IE-app
+          cd ..
+          cd ..
           dvc pull -r origin
+          cd backend/IE-app
 
       - name: Fetch Data
         run: |
