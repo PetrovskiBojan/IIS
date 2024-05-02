@@ -1,0 +1,20 @@
+version: "3.8"
+
+services:
+  backend:
+    image: buju4e/iis:latest
+    ports:
+      - "8000:8000" # Adjust if your backend listens on a different port
+    networks:
+      - app-network
+
+  frontend:
+    image: buju4e/iis_frontend:latest
+    ports:
+      - "3000:3000" # Adjust if your frontend listens on a different port
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
