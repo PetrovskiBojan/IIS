@@ -48,7 +48,7 @@ jobs:
           git push
           dvc push -r origin
 
-  preprocess_data:
+  validate_data:
     needs: fetch_data
     runs-on: ubuntu-latest
     defaults:
@@ -61,31 +61,49 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: '3.12'
-      - name: Install Poetry
-        run: |
-          curl -sSL https://install.python-poetry.org | python3 -
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
       - name: Install dependencies
-        run: |
-          poetry config virtualenvs.create false
-          poetry install
-      - name: Install DVC with S3 support
-        run: |
-          pip install 'dvc[s3]'
-      - name: Configure DVC remote
-        run: |
-          dvc remote modify origin endpointurl https://dagshub.com/PetrovskiBojan/IIS.s3
-          dvc remote modify origin access_key_id ${{ secrets.DVC_ACCESS_KEY_ID }}
-          dvc remote modify origin secret_access_key ${{ secrets.DVC_SECRET_ACCESS_KEY }}
-      - name: DVC Pull
-        run: |
-          dvc pull -r origin
+        run: poetry install
+      - name: Validate Data
+        run: poetry run python scripts/validate_data.py
+
+  evaluate_data:
+    needs: validate_data
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend/IE-app
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: poetry install
+      - name: Evaluate Data
+        run: poetry run python scripts/evaluate_data.py
+
+  preprocess_data:
+    needs: evaluate_data
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend/IE-app
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: poetry install
       - name: Preprocess Data
-        run: |
-          poetry run python scripts/preprocess_data.py
+        run: poetry run python scripts/preprocess_data.py
       - name: Git and DVC Operations
         run: |
-          dvc add data
+          dvc add data/processed
           git add .
           git commit -m "Update preprocessed data" || echo "No changes to commit"
           git push
@@ -104,25 +122,10 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: '3.12'
-      - name: Install Poetry
-        run: |
-          curl -sSL https://install.python-poetry.org | python3 -
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
       - name: Install dependencies
         run: |
           poetry config virtualenvs.create false
           poetry install
-      - name: Install DVC with S3 support
-        run: |
-          pip install 'dvc[s3]'
-      - name: Configure DVC remote
-        run: |
-          dvc remote modify origin endpointurl https://dagshub.com/PetrovskiBojan/IIS.s3
-          dvc remote modify origin access_key_id ${{ secrets.DVC_ACCESS_KEY_ID }}
-          dvc remote modify origin secret_access_key ${{ secrets.DVC_SECRET_ACCESS_KEY }}
-      - name: DVC Pull
-        run: |
-          dvc pull -r origin
       - name: Train Model
         run: |
           poetry run python scripts/train_model.py
