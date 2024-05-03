@@ -29,9 +29,9 @@ if __name__ == "__main__":
     bike_url = "https://api.jcdecaux.com/vls/v1/stations?contract=maribor&apiKey=5e150537116dbc1786ce5bec6975a8603286526b"
     bike_data = fetch_bike_data(bike_url)
 
-    # Ensure the combined directory exists
-    combined_dir = os.path.join('IE-app', 'data', 'combined')  # Adjust path if necessary
-    os.makedirs(combined_dir, exist_ok=True)  # Create the directory if it does not exist
+    # Define the data directory relative to the root
+    data_dir = '../data/combined'  # Adjusted path for the new requirement
+    os.makedirs(data_dir, exist_ok=True)  # Create the directory if it does not exist
 
     for station in bike_data:
         time_now, temperature, precipitation_probability = fetch_weather_data(station['position']['lat'], station['position']['lng'])
@@ -42,8 +42,9 @@ if __name__ == "__main__":
             'available_bike_stands': [station['available_bike_stands']]
         })
 
-        filename = f"{station['number']}_{station['name'].replace(' ', '_').replace(',', '').replace('-', '_')}_combined.csv"
-        filepath = os.path.join(combined_dir, filename)
+        # Remove '_combined' from the filename
+        filename = f"{station['number']}_{station['name'].replace(' ', '_').replace(',', '').replace('-', '_')}.csv"
+        filepath = os.path.join(data_dir, filename)
         if os.path.exists(filepath) and not pd.read_csv(filepath).empty:
             combined_data.to_csv(filepath, mode='a', header=False, index=False)
         else:
