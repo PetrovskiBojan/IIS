@@ -1,4 +1,5 @@
 import subprocess
+import shutil
 import os
 
 def update_reference_data():
@@ -9,13 +10,21 @@ def update_reference_data():
     # Fetch the last committed version of current_data.csv from DVC
     subprocess.run(['dvc', 'pull', current_data_path], check=True)
     
-    # Rename this version as the reference data
-    os.rename(current_data_path, reference_data_path)
+    if os.path.exists(reference_data_path):
+        os.remove(reference_data_path)  
+    shutil.move(current_data_path, reference_data_path)
     print("Reference data updated.")
+
+    # Add the updated reference data to DVC
+    subprocess.run(['dvc', 'add', reference_data_path], check=True)
 
     # Restore the latest current data
     subprocess.run(['dvc', 'checkout', current_data_path], check=True)
     print("Latest current data restored.")
+
+    # Push the updated reference data to the remote storage
+    subprocess.run(['dvc', 'push', '-r', 'origin'], check=True)
+    print("Reference data pushed to DVC remote.")
 
 if __name__ == "__main__":
     update_reference_data()
