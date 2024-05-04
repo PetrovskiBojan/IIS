@@ -29,9 +29,10 @@ if __name__ == "__main__":
     bike_url = "https://api.jcdecaux.com/vls/v1/stations?contract=maribor&apiKey=5e150537116dbc1786ce5bec6975a8603286526b"
     bike_data = fetch_bike_data(bike_url)
 
-    # Define the data directory relative to the root
-    data_dir = '../data/combined'  # Adjusted path for the new requirement
-    os.makedirs(data_dir, exist_ok=True)  # Create the directory if it does not exist
+    script_dir = os.path.dirname(os.path.abspath(__file__))  
+    project_dir = os.path.dirname(script_dir)  
+    data_dir = os.path.join(project_dir, 'data', 'combined')
+    os.makedirs(data_dir, exist_ok=True)  
 
     for station in bike_data:
         time_now, temperature, precipitation_probability = fetch_weather_data(station['position']['lat'], station['position']['lng'])
@@ -42,10 +43,10 @@ if __name__ == "__main__":
             'available_bike_stands': [station['available_bike_stands']]
         })
 
-        # Remove '_combined' from the filename
         filename = f"{station['number']}_{station['name'].replace(' ', '_').replace(',', '').replace('-', '_')}.csv"
         filepath = os.path.join(data_dir, filename)
-        if os.path.exists(filepath) and not pd.read_csv(filepath).empty:
+        
+        if os.path.exists(filepath):
             combined_data.to_csv(filepath, mode='a', header=False, index=False)
         else:
             combined_data.to_csv(filepath, index=False)
