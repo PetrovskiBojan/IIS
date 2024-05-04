@@ -42,15 +42,14 @@ const StationCard = ({ station }) => {
         await fetchWeatherData();
 
       const response = await axios.post("http://localhost:8000/predict", {
-        station_name: station.identifier, // Use the correct identifier as needed
+        station_name: station.identifier,
         current_time: new Date().toISOString(),
         temperatures_2m: temperatures,
         precipitation_probabilities: precipitationProbabilities,
       });
 
-      // Process predictions to ensure non-negative values
       const adjustedPredictions = response.data.predictions.map((pred) =>
-        pred < 0 ? (pred > -4 ? Math.abs(pred) : 0) : pred
+        pred < 0 ? -pred : pred
       );
 
       setPrediction(adjustedPredictions);
