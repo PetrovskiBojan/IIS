@@ -1,27 +1,20 @@
 import pandas as pd
-from great_expectations.dataset import PandasDataset
+from evidently import ColumnMapping
+from evidently.report import Report
+from evidently.metric_preset import DataDriftPreset
 
-def validate_data(csv_path):
-    df = pd.read_csv(csv_path, parse_dates=['time'])
-    df['time'] = df['time'].dt.floor('Min')
-    
-    ge_df = PandasDataset(df)
-    # Set expectations
-    ge_df.expect_column_values_to_not_be_null('temperature_2m')
-    ge_df.expect_column_values_to_be_between('temperature_2m', minimum=-50, maximum=50)
-    ge_df.expect_column_values_to_not_be_null('precipitation_probability')
-    ge_df.expect_column_values_to_be_between('precipitation_probability', minimum=0, maximum=100)
-    
-    # Validate data
-    results = ge_df.validate(result_format='SUMMARY')
-    if not results["success"]:
-        print("Data validation failed. Please check the dataset.")
-        return False
-    print("Data validation passed.")
-    return True
+def generate_data_drift_report(current_data_path, reference_data_path, report_path):
+    current_data = pd.read_csv(current_data_path)
+    reference_data = pd.read_csv(reference_data_path)
+    column_mapping = ColumnMapping() 
+
+    report = Report(metrics=[DataDriftPreset()])
+    report.run(reference_data=reference_data, current_data=current_data, column_mapping=column_mapping)
+    report.save_html(report_path)
 
 if __name__ == "__main__":
-    import sys
-    csv_path = sys.argv[0]
-    if not validate_data(csv_path):
-        sys.exit(1) 
+    generate_data_drift_report(
+        "data/merged/current_data.csv", 
+        "data/merged/reference_data.csv", 
+        "reports/data_drift_report.html"
+    )
