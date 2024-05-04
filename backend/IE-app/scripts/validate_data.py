@@ -16,5 +16,5 @@ if __name__ == "__main__":
     generate_data_drift_report(
         "data/merged/current_data.csv", 
         "data/merged/reference_data.csv", 
-        "reports/data_drift_report.html"
+        "reports/index.html"
     )
