@@ -1,22 +1,20 @@
 import pandas as pd
-from evidently.dashboard import Dashboard
-from evidently.dashboard.tabs import DataDriftTab
-import json
+from evidently import ColumnMapping
+from evidently.report import Report
+from evidently.metric_preset import DataDriftPreset
 
-def evaluate_data(reference_data_path, current_data_path, report_path):
-    reference_data = pd.read_csv(reference_data_path)
+def generate_data_drift_report(current_data_path, reference_data_path, report_path):
+    # Load the data
     current_data = pd.read_csv(current_data_path)
-    
-    data_drift_dashboard = Dashboard(tabs=[DataDriftTab()])
-    data_drift_dashboard.calculate(reference_data, current_data, column_mapping=None)
-    
-    report = data_drift_dashboard.show()
-    report.save(report_path)
-    print(f"Data drift report saved to {report_path}")
+    reference_data = pd.read_csv(reference_data_path)
+
+    # Column mapping, if your data needs it (optional)
+    column_mapping = ColumnMapping()
+
+    # Create a data drift report
+    report = Report(metrics=[DataDriftPreset()])
+    report.run(reference_data=reference_data, current_data=current_data, column_mapping=column_mapping)
+    report.save_html(report_path)
 
 if __name__ == "__main__":
-    import sys
-    reference_data_path = sys.argv[1]
-    current_data_path = sys.argv[2]
-    report_path = sys.argv[3]
-    evaluate_data(reference_data_path, current_data_path, report_path)
+    generate_data_drift_report("data/merged/current_data.csv", "data/merged/reference_data.csv", "reports/data_drift_report.html")
