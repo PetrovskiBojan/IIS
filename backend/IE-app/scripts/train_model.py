@@ -60,8 +60,9 @@ def main():
             X_train, X_test, y_train, y_test = preprocess_and_load_data(csv_path, n_steps)
 
             with mlflow.start_run():
+                mlflow.set_tag("csv_file", csv_file)
                 model = build_lstm_model(n_steps, X_train.shape[2])
-                history = model.fit(X_train, y_train, epochs=50, validation_data=(X_test, y_test), verbose=2, callbacks=[EarlyStopping(monitor='val_loss', patience=10)])
+                history = model.fit(X_train, y_train, epochs=30, validation_data=(X_test, y_test), verbose=2, callbacks=[EarlyStopping(monitor='val_loss', patience=10)])
                 
                 # Logging metrics
                 train_mse = history.history['loss'][-1]
