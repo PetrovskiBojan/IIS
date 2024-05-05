@@ -2,7 +2,7 @@ name: Model Training Pipeline
 
 on:
   workflow_run:
-    workflows: ["Data Pipeline"]  # This should match the name of your data pipeline workflow
+    workflows: ["Data Pipeline"]
     types:
       - completed
 
