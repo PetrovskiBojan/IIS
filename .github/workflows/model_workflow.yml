@@ -1,0 +1,64 @@
+name: Model Training Pipeline
+
+on:
+  workflow_run:
+    workflows: ["Data Pipeline"]  # This should match the name of your data pipeline workflow
+    types:
+      - completed
+
+jobs:
+  train_model:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    defaults:
+      run:
+        working-directory: backend/IE-app
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.12'
+      - name: Install and Configure Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          poetry config virtualenvs.create false
+          poetry install
+      - name: Train Model
+        run: |
+          poetry run python scripts/train_model.py
+      - name: Git and DVC Operations
+        run: |
+          dvc add models
+          git add .
+          git commit -m "Update trained models" || echo "No changes to commit"
+          git push
+          dvc push -r origin
+
+  test_model:
+    needs: train_model
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend/IE-app
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.12'
+      - name: Install and Configure Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          poetry config virtualenvs.create false
+          poetry install
+      - name: Test Model
+        run: |
+          poetry run python scripts/test_model.py
+      - name: Git and DVC Operations
+        run: |
+          dvc add test_results
+          git add .
+          git commit -m "Update test results" || echo "No changes to commit"
+          git push
+          dvc push -r origin
