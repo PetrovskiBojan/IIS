@@ -149,6 +149,34 @@ jobs:
           git add .
           git commit -m "Update merged data" || echo "No changes to commit"
           git push
+  deploy_report:
+     needs: validate_data
+     runs-on: ubuntu-latest
+     defaults:
+       run:
+         working-directory: backend/IE-app
+     steps:
+       - uses: actions/checkout@v2
+       - uses: actions/setup-python@v2
+         with:
+           python-version: '3.12'
+       - name: Install and Configure Poetry
+         run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          poetry config virtualenvs.create false
+          poetry install
+       - name: Generate Data Validation Report
+         run: |
+           poetry run python scripts/generate_data_drift_report.py
+       - name: Deploy DataDocs to Netlify
+         uses: nwtgck/actions-netlify@v1.2
+         with:
+           publish-dir: "backend/IE-app/reports"
+           production-deploy: true
+         env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
   split_data:
     needs: validate_data
     runs-on: ubuntu-latest
