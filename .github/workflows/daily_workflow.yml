@@ -97,17 +97,23 @@ jobs:
         run: |
           dvc remote modify origin access_key_id ${{ secrets.DVC_ACCESS_KEY_ID }} --local
           dvc remote modify origin secret_access_key ${{ secrets.DVC_SECRET_ACCESS_KEY }} --local
+      - name: Pull Processed Data with DVC
+        run: |
+          dvc pull data/processed
+      - name: Check directory and list files
+        run: |
+          ls -alh backend/IE-app/data/processed
       - name: Merge Data
         run: |
           poetry run python scripts/merge_data.py
-      - name: DVC Add and Push
+      - name: DVC Add and Push merged data
         run: |
-          dvc add data/processed
+          dvc add data/merged/current_data.csv
           dvc push
-      - name: Git Operations
+      - name: Git Operations for merged data
         run: |
           git add .
-          git commit -m "Update preprocessed data" || echo "No changes to commit"
+          git commit -m "Update merged data" || echo "No changes to commit"
           git push
 
   validate_data:
