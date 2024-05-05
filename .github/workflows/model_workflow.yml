@@ -24,11 +24,11 @@ jobs:
           echo "$HOME/.local/bin" >> $GITHUB_PATH
           poetry config virtualenvs.create false
           poetry install
+      - name: Train Model
         env:
           MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
           MLFLOW_TRACKING_USERNAME: ${{ secrets.MLFLOW_TRACKING_USERNAME }}
           MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_TRACKING_PASSWORD }}
-      - name: Train Model
         run: |
           poetry run python scripts/train_model.py
       - name: Git and DVC Operations
@@ -56,11 +56,11 @@ jobs:
           echo "$HOME/.local/bin" >> $GITHUB_PATH
           poetry config virtualenvs.create false
           poetry install
+      - name: Test Model
         env:
           MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
           MLFLOW_TRACKING_USERNAME: ${{ secrets.MLFLOW_TRACKING_USERNAME }}
           MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_TRACKING_PASSWORD }}
-      - name: Test Model
         run: |
           poetry run python scripts/test_model.py
       - name: Git and DVC Operations
