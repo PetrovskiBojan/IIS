@@ -41,7 +41,6 @@ jobs:
           git add .
           git commit -m "Update fetched data" || echo "No changes to commit"
           git push
-
   preprocess_data:
     needs: fetch_data
     runs-on: ubuntu-latest
@@ -75,7 +74,6 @@ jobs:
           git add .
           git commit -m "Update preprocessed data" || echo "No changes to commit"
           git push
-
   merge_data:
     needs: preprocess_data
     runs-on: ubuntu-latest
@@ -112,7 +110,6 @@ jobs:
           git add .
           git commit -m "Update merged data" || echo "No changes to commit"
           git push
-
   validate_data:
     needs: merge_data
     runs-on: ubuntu-latest
