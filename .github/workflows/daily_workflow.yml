@@ -99,10 +99,7 @@ jobs:
           dvc remote modify origin secret_access_key ${{ secrets.DVC_SECRET_ACCESS_KEY }} --local
       - name: Pull Processed Data with DVC
         run: |
-          dvc pull data/processed
-      - name: Check directory and list files
-        run: |
-          ls -alh backend/IE-app/data/processed
+          dvc pull data
       - name: Merge Data
         run: |
           poetry run python scripts/merge_data.py
