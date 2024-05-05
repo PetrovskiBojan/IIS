@@ -34,6 +34,7 @@ jobs:
       - name: Pull Processed Data with DVC
         run: |
           dvc pull data
+          dvc pull models
       - name: Train Model
         env:
           MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
@@ -76,6 +77,7 @@ jobs:
       - name: Pull Processed Data with DVC
         run: |
           dvc pull data
+          dvc pull models
       - name: Test Model
         env:
           MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
@@ -85,7 +87,7 @@ jobs:
           poetry run python scripts/test_model.py
       - name: Git and DVC Operations
         run: |
-          dvc add test_results
+          dvc add models
           git add .
           git commit -m "Update test results" || echo "No changes to commit"
           git push
