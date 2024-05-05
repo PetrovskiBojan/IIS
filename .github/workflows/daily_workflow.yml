@@ -134,10 +134,21 @@ jobs:
         run: |
           dvc remote modify origin access_key_id ${{ secrets.DVC_ACCESS_KEY_ID }} --local
           dvc remote modify origin secret_access_key ${{ secrets.DVC_SECRET_ACCESS_KEY }} --local
+      - name: Pull Processed Data with DVC
+        run: |
+          dvc pull data
       - name: Validate Data
         run: |
           poetry run python scripts/validate_data.py
-
+      - name: DVC Add and Push merged data
+        run: |
+          dvc add data
+          dvc push
+      - name: Git Operations for merged data
+        run: |
+          git add .
+          git commit -m "Update merged data" || echo "No changes to commit"
+          git push
   split_data:
     needs: validate_data
     runs-on: ubuntu-latest
