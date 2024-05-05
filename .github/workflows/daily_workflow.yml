@@ -16,20 +16,24 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: '3.12'
-      - name: Install Poetry and Dependencies
+      - name: Install and Configure Poetry
         run: |
           curl -sSL https://install.python-poetry.org | python3 -
           echo "$HOME/.local/bin" >> $GITHUB_PATH
           poetry config virtualenvs.create false
+      - name: Install Dependencies
+        run: |
           poetry install
       - name: Install DVC with S3 support
-        run: pip install 'dvc[s3]'
+        run: |
+          pip install 'dvc[s3]'
       - name: Configure DVC remote credentials
         run: |
           dvc remote modify origin access_key_id ${{ secrets.DVC_ACCESS_KEY_ID }} --local
           dvc remote modify origin secret_access_key ${{ secrets.DVC_SECRET_ACCESS_KEY }} --local
       - name: Fetch Data
-        run: poetry run python scripts/fetch_data.py
+        run: |
+          poetry run python scripts/fetch_data.py
       - name: Git and DVC Operations
         run: |
           dvc add data
@@ -49,17 +53,20 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: '3.12'
-      - name: Install Dependencies
-        run: poetry install
-      - name: Configure DVC remote credentials
+      - name: Install and Configure Poetry
         run: |
-          dvc remote modify origin access_key_id ${{ secrets.DVC_ACCESS_KEY_ID }} --local
-          dvc remote modify origin secret_access_key ${{ secrets.DVC_SECRET_ACCESS_KEY }} --local
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          poetry config virtualenvs.create false
+      - name: Install Dependencies
+        run: |
+          poetry install
       - name: Preprocess Data
-        run: poetry run python scripts/preprocess_data.py
+        run: |
+          poetry run python scripts/preprocess_data.py
       - name: Git and DVC Operations
         run: |
-          dvc add data
+          dvc add data/processed
           git add .
           git commit -m "Update preprocessed data" || echo "No changes to commit"
           git push
@@ -76,14 +83,17 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: '3.12'
-      - name: Install Dependencies
-        run: poetry install
-      - name: Configure DVC remote credentials
+      - name: Install and Configure Poetry
         run: |
-          dvc remote modify origin access_key_id ${{ secrets.DVC_ACCESS_KEY_ID }} --local
-          dvc remote modify origin secret_access_key ${{ secrets.DVC_SECRET_ACCESS_KEY }} --local
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          poetry config virtualenvs.create false
+      - name: Install Dependencies
+        run: |
+          poetry install
       - name: Merge Data
-        run: poetry run python scripts/merge_data.py
+        run: |
+          poetry run python scripts/merge_data.py
 
   validate_data:
     needs: merge_data
@@ -96,10 +106,17 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: '3.12'
+      - name: Install and Configure Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          poetry config virtualenvs.create false
       - name: Install Dependencies
-        run: poetry install
+        run: |
+          poetry install
       - name: Validate Data
-        run: poetry run python scripts/validate_data.py
+        run: |
+          poetry run python scripts/validate_data.py
 
   split_data:
     needs: validate_data
@@ -112,10 +129,17 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: '3.12'
+      - name: Install and Configure Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          poetry config virtualenvs.create false
       - name: Install Dependencies
-        run: poetry install
+        run: |
+          poetry install
       - name: Split Data
-        run: poetry run python scripts/split_data.py
+        run: |
+          poetry run python scripts/split_data.py
       - name: Git and DVC Operations
         run: |
           dvc add data
