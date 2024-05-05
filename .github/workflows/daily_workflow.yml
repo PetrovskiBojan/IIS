@@ -24,11 +24,10 @@ jobs:
           poetry install
       - name: Install DVC with S3 support
         run: pip install 'dvc[s3]'
-      - name: Configure DVC remote
+      - name: Configure DVC remote credentials
         run: |
-          dvc remote add -d origin s3://your-s3-bucket/path
-          dvc remote modify origin access_key_id ${{ secrets.DVC_ACCESS_KEY_ID }}
-          dvc remote modify origin secret_access_key ${{ secrets.DVC_SECRET_ACCESS_KEY }}
+          dvc remote modify origin access_key_id ${{ secrets.DVC_ACCESS_KEY_ID }} --local
+          dvc remote modify origin secret_access_key ${{ secrets.DVC_SECRET_ACCESS_KEY }} --local
       - name: Fetch Data
         run: poetry run python scripts/fetch_data.py
       - name: Git and DVC Operations
@@ -52,10 +51,10 @@ jobs:
           python-version: '3.12'
       - name: Install Dependencies
         run: poetry install
-      - name: Configure DVC remote
+      - name: Configure DVC remote credentials
         run: |
-          dvc remote modify origin access_key_id ${{ secrets.DVC_ACCESS_KEY_ID }}
-          dvc remote modify origin secret_access_key ${{ secrets.DVC_SECRET_ACCESS_KEY }}
+          dvc remote modify origin access_key_id ${{ secrets.DVC_ACCESS_KEY_ID }} --local
+          dvc remote modify origin secret_access_key ${{ secrets.DVC_SECRET_ACCESS_KEY }} --local
       - name: Preprocess Data
         run: poetry run python scripts/preprocess_data.py
       - name: Git and DVC Operations
@@ -79,10 +78,10 @@ jobs:
           python-version: '3.12'
       - name: Install Dependencies
         run: poetry install
-      - name: Configure DVC remote
+      - name: Configure DVC remote credentials
         run: |
-          dvc remote modify origin access_key_id ${{ secrets.DVC_ACCESS_KEY_ID }}
-          dvc remote modify origin secret_access_key ${{ secrets.DVC_SECRET_ACCESS_KEY }}
+          dvc remote modify origin access_key_id ${{ secrets.DVC_ACCESS_KEY_ID }} --local
+          dvc remote modify origin secret_access_key ${{ secrets.DVC_SECRET_ACCESS_KEY }} --local
       - name: Merge Data
         run: poetry run python scripts/merge_data.py
 
@@ -99,10 +98,6 @@ jobs:
           python-version: '3.12'
       - name: Install Dependencies
         run: poetry install
-      - name: Configure DVC remote
-        run: |
-          dvc remote modify origin access_key_id ${{ secrets.DVC_ACCESS_KEY_ID }}
-          dvc remote modify origin secret_access_key ${{ secrets.DVC_SECRET_ACCESS_KEY }}
       - name: Validate Data
         run: poetry run python scripts/validate_data.py
 
@@ -119,10 +114,6 @@ jobs:
           python-version: '3.12'
       - name: Install Dependencies
         run: poetry install
-      - name: Configure DVC remote
-        run: |
-          dvc remote modify origin access_key_id ${{ secrets.DVC_ACCESS_KEY_ID }}
-          dvc remote modify origin secret_access_key ${{ secrets.DVC_SECRET_ACCESS_KEY }}
       - name: Split Data
         run: poetry run python scripts/split_data.py
       - name: Git and DVC Operations
