@@ -68,7 +68,7 @@ jobs:
           poetry run python scripts/preprocess_data.py
       - name: DVC Add and Push
         run: |
-          dvc add data/processed
+          dvc add data
           dvc push
       - name: Git Operations
         run: |
@@ -108,7 +108,7 @@ jobs:
           poetry run python scripts/merge_data.py
       - name: DVC Add and Push merged data
         run: |
-          dvc add data/merged/current_data.csv
+          dvc add data
           dvc push
       - name: Git Operations for merged data
         run: |
