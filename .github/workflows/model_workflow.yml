@@ -24,6 +24,16 @@ jobs:
           echo "$HOME/.local/bin" >> $GITHUB_PATH
           poetry config virtualenvs.create false
           poetry install
+      - name: Install DVC with S3 support
+        run: |
+          pip install 'dvc[s3]'
+      - name: Configure DVC remote credentials
+        run: |
+          dvc remote modify origin access_key_id ${{ secrets.DVC_ACCESS_KEY_ID }} --local
+          dvc remote modify origin secret_access_key ${{ secrets.DVC_SECRET_ACCESS_KEY }} --local
+      - name: Pull Processed Data with DVC
+        run: |
+          dvc pull data
       - name: Train Model
         env:
           MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
@@ -56,6 +66,16 @@ jobs:
           echo "$HOME/.local/bin" >> $GITHUB_PATH
           poetry config virtualenvs.create false
           poetry install
+      - name: Install DVC with S3 support
+        run: |
+          pip install 'dvc[s3]'
+      - name: Configure DVC remote credentials
+        run: |
+          dvc remote modify origin access_key_id ${{ secrets.DVC_ACCESS_KEY_ID }} --local
+          dvc remote modify origin secret_access_key ${{ secrets.DVC_SECRET_ACCESS_KEY }} --local
+      - name: Pull Processed Data with DVC
+        run: |
+          dvc pull data
       - name: Test Model
         env:
           MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
