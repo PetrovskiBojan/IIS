@@ -21,8 +21,6 @@ jobs:
           curl -sSL https://install.python-poetry.org | python3 -
           echo "$HOME/.local/bin" >> $GITHUB_PATH
           poetry config virtualenvs.create false
-      - name: Install Dependencies
-        run: |
           poetry install
       - name: Install DVC with S3 support
         run: |
@@ -34,13 +32,15 @@ jobs:
       - name: Fetch Data
         run: |
           poetry run python scripts/fetch_data.py
-      - name: Git and DVC Operations
+      - name: DVC Add and Push
         run: |
           dvc add data
+          dvc push
+      - name: Git Operations
+        run: |
           git add .
           git commit -m "Update fetched data" || echo "No changes to commit"
           git push
-          dvc push
 
   preprocess_data:
     needs: fetch_data
@@ -58,19 +58,23 @@ jobs:
           curl -sSL https://install.python-poetry.org | python3 -
           echo "$HOME/.local/bin" >> $GITHUB_PATH
           poetry config virtualenvs.create false
-      - name: Install Dependencies
-        run: |
           poetry install
+      - name: Configure DVC remote credentials
+        run: |
+          dvc remote modify origin access_key_id ${{ secrets.DVC_ACCESS_KEY_ID }} --local
+          dvc remote modify origin secret_access_key ${{ secrets.DVC_SECRET_ACCESS_KEY }} --local
       - name: Preprocess Data
         run: |
           poetry run python scripts/preprocess_data.py
-      - name: Git and DVC Operations
+      - name: DVC Add and Push
         run: |
           dvc add data/processed
+          dvc push
+      - name: Git Operations
+        run: |
           git add .
           git commit -m "Update preprocessed data" || echo "No changes to commit"
           git push
-          dvc push
 
   merge_data:
     needs: preprocess_data
@@ -88,9 +92,11 @@ jobs:
           curl -sSL https://install.python-poetry.org | python3 -
           echo "$HOME/.local/bin" >> $GITHUB_PATH
           poetry config virtualenvs.create false
-      - name: Install Dependencies
-        run: |
           poetry install
+      - name: Configure DVC remote credentials
+        run: |
+          dvc remote modify origin access_key_id ${{ secrets.DVC_ACCESS_KEY_ID }} --local
+          dvc remote modify origin secret_access_key ${{ secrets.DVC_SECRET_ACCESS_KEY }} --local
       - name: Merge Data
         run: |
           poetry run python scripts/merge_data.py
@@ -111,9 +117,11 @@ jobs:
           curl -sSL https://install.python-poetry.org | python3 -
           echo "$HOME/.local/bin" >> $GITHUB_PATH
           poetry config virtualenvs.create false
-      - name: Install Dependencies
-        run: |
           poetry install
+      - name: Configure DVC remote credentials
+        run: |
+          dvc remote modify origin access_key_id ${{ secrets.DVC_ACCESS_KEY_ID }} --local
+          dvc remote modify origin secret_access_key ${{ secrets.DVC_SECRET_ACCESS_KEY }} --local
       - name: Validate Data
         run: |
           poetry run python scripts/validate_data.py
@@ -134,16 +142,20 @@ jobs:
           curl -sSL https://install.python-poetry.org | python3 -
           echo "$HOME/.local/bin" >> $GITHUB_PATH
           poetry config virtualenvs.create false
-      - name: Install Dependencies
-        run: |
           poetry install
+      - name: Configure DVC remote credentials
+        run: |
+          dvc remote modify origin access_key_id ${{ secrets.DVC_ACCESS_KEY_ID }} --local
+          dvc remote modify origin secret_access_key ${{ secrets.DVC_SECRET_ACCESS_KEY }} --local
       - name: Split Data
         run: |
           poetry run python scripts/split_data.py
-      - name: Git and DVC Operations
+      - name: DVC Add and Push
         run: |
-          dvc add data
+          dvc add data/split
+          dvc push
+      - name: Git Operations
+        run: |
           git add .
           git commit -m "Update split data" || echo "No changes to commit"
           git push
-          dvc push
