@@ -152,15 +152,12 @@ jobs:
   deploy_report:
     needs: validate_data 
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend/IE-app
     steps:
       - uses: actions/checkout@v2
       - name: Deploy DataDocs to Netlify
         uses: nwtgck/actions-netlify@v1.2
         with:
-          publish-dir: "/reports" 
+          publish-dir: "backend/IE-app/reports/index.html" 
           production-deploy: true
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
