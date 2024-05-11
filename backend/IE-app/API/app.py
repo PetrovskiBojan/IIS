@@ -9,6 +9,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import mlflow
 from mlflow.tracking import MlflowClient
+from databese import collection_name
+from schema import individual_serializer
+from bson import ObjectId
+from request import PredictionRequest
 
 # Load environment variables
 load_dotenv()
@@ -22,12 +26,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-class PredictionRequest(BaseModel):
-    station_name: str
-    current_time: str  # Consider parsing this into a datetime object if needed
-    temperatures_2m: list[float]
-    precipitation_probabilities: list[float]
 
 # MLflow setup
 MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI")
@@ -43,6 +41,13 @@ def load_scaler_parameters(station_name):
         scaler_params = json.load(file)
     return np.array(scaler_params["min_"]), np.array(scaler_params["scale_"])
 
+def load_model_from_directory(model_name):
+    MODELS_DIR = os.path.join(os.path.dirname(__file__), "..", "models")
+    model_path = os.path.join(MODELS_DIR, f"{model_name}.h5")
+    if not os.path.exists(model_path):
+        raise HTTPException(status_code=404, detail=f"Model '{model_name}.h5' not found in directory {model_path}.")
+    return load_model(model_path)
+
 def normalize(data, min_, scale_):
     return (data - min_) / scale_
 
@@ -55,8 +60,9 @@ def load_model_from_mlflow(model_name):
 
 @app.post("/predict")
 async def predict(request: PredictionRequest):
+    collection_name.insert_one(dict(request))
     try:
-        model = load_model_from_mlflow(request.station_name)
+        model = load_model_from_directory(request.station_name)
         min_, scale_ = load_scaler_parameters(request.station_name)
     except Exception as e:
         raise HTTPException(status_code=404, detail=str(e))
