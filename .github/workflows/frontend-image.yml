@@ -32,4 +32,4 @@ jobs:
         context: ./frontend
         file: ./frontend/Dockerfile
         push: true
-        tags: yourusername/yourappname:latest
+        tags: buju4e/iis_frontend:latest
