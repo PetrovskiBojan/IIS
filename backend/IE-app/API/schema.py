@@ -1,5 +1,4 @@
 #Schema that wraps the input request object to make it exemplary for database
-#Test the new workflow file
 def individual_serializer(request) -> dict:
     return {
         "station_name": request.station_name,
