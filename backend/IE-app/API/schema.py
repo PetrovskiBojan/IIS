@@ -1,3 +1,4 @@
+#Schema that wraps the input request object to make it exemplary for database
 def individual_serializer(request) -> dict:
     return {
         "station_name": request.station_name,
