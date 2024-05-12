@@ -11,6 +11,7 @@ import mlflow
 import mlflow.tensorflow
 from dotenv import load_dotenv
 from mlflow.tracking import MlflowClient
+from mlflow.models.signature import infer_signature
 
 # Load environment variables from .env file
 load_dotenv()
@@ -73,23 +74,34 @@ def main():
         # Predict and calculate additional metrics
         y_train_pred = model.predict(X_train)
         y_test_pred = model.predict(X_test)
-        mlflow.log_metric("train_mae", mean_absolute_error(y_train, y_train_pred))
-        mlflow.log_metric("test_mae", mean_absolute_error(y_test, y_test_pred))
-        mlflow.log_metric("train_r2", r2_score(y_train, y_train_pred))
-        mlflow.log_metric("test_r2", r2_score(y_test, y_test_pred))
 
-        # Register and evaluate the model
-        model_uri = mlflow.keras.log_model(model, "model", registered_model_name="Bike_Sharing_Demand_Forecasting")
-        latest_prod_model = client.get_latest_versions("Bike_Sharing_Demand_Forecasting", stages=["Production"])
+        # Infer signature and log the model
+        signature = infer_signature(X_train, y_train_pred)
+        model_uri = mlflow.keras.log_model(model, "model", registered_model_name="Bike_Sharing_Demand_Forecasting", signature=signature)
         
+        # Compare with production model
+        latest_prod_model = client.get_latest_versions("Bike_Sharing_Demand_Forecasting", stages=["Production"])
         if latest_prod_model:
-            best_mse = latest_prod_model[0].metrics['test_mse']
+            prod_version = latest_prod_model[0]
+            best_mse = float(prod_version.metrics['test_mse'])
             if history.history['val_loss'][-1] < best_mse:
+                # Promote this model to production
+                client.transition_model_version_stage(
+                    name="Bike_Sharing_Demand_Forecasting",
+                    version=prod_version.version,
+                    stage="Archived"
+                )
                 client.transition_model_version_stage(
                     name="Bike_Sharing_Demand_Forecasting",
                     version=run.info.run_id,
                     stage="Production",
-                    archive_existing_versions=True
+                )
+            else:
+                # Keep as a new version, not in production
+                client.transition_model_version_stage(
+                    name="Bike_Sharing_Demand_Forecasting",
+                    version=run.info.run_id,
+                    stage="None",
                 )
 
         print("Model training and testing complete. Metrics reported.")
